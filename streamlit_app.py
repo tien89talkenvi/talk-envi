@@ -104,15 +104,16 @@ def get_binary_file_downloader_link(file_path, link_text):
 ################################################################################################
 
 if __name__ == "__main__":
-    st.title("Lấy website links và xem nội dung")
+    st.title("Lấy website links để tìm hiểu!")
     #st.subheader("(Chỉ để thử lập trình)")
 
     
     so_url_max_muon=st.radio("Giới hạn cấp độ lấy :",["1", "2","3","10","20","30"],index=0,horizontal=True)
     so_url_max=int(so_url_max_muon)
 
+    st.markdown("<h5 style='color: red;'># Nhập URL của WEB muốn tìm link trong đó vào khung dưới đây (ex.<span style='color:blue;'> https://nld.com.vn </span>) rồi Enter</h5> ", unsafe_allow_html=True)
 
-    url_nhapvao = st.text_input(label=':red[Nhập URL của WEB muốn tìm link trong đó vào khung dưới đây]'+' (dạng ví dụ : https://nld.com.vn ) rồi Enter:',)
+    url_nhapvao = st.text_input('chon',label_visibility = "hidden")
 
     if url_nhapvao != '':
 
@@ -161,7 +162,10 @@ if __name__ == "__main__":
         st.markdown(get_binary_file_downloader_link(domain_name+"_external_links.txt", "Nhấp để tải về file "+domain_name+"_external_links.txt"), unsafe_allow_html=True)
         
         st.write('---')
-        radio_chon=st.radio(':red[Chọn một url đê xem trang web tương ứng :]',["external link","internal link"],index=0,horizontal=True)
+        st.markdown("<h5 style='color: red;'># Chọn một url đê xem trang web tương ứng :</h5> ", unsafe_allow_html=True)
+
+        radio_chon=st.radio(':red[Chọn một url đê xem trang web tương ứng :]',["external link","internal link"],index=0,horizontal=True,label_visibility ="hidden")
+        
         if radio_chon=="external link":
             url_option = st.selectbox(':red[Chọn một url đê xem trang web tương ứng :]',lsbox_out,label_visibility ="hidden")
         else:
