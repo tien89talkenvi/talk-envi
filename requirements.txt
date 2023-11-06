@@ -1,5 +1,5 @@
-streamlit
-requests
-urllib
-bs4
-colorama
+streamlit==1.27.2
+requests==2.28.2
+urllib3==1.26.15
+bs4==0.0.1
+colorama=0.4.6
