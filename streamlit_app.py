@@ -1,89 +1,168 @@
-#streamlit==1.27.2
-#SpeechRecognition==3.10.0
-#pyaudio==0.2.13 #(cho SpeechRecognition lay micro )
-#googletrans==4.0.0rc1 #(phien ban nay cho rieng py khi su dung googletrans, cac pban khac hay gay loi)
-#gTTS==2.4.0
-
-
-#https://talkenvi-b5vypm7itcecxnkuvne7h9.streamlit.app/ 
-#la url app moi talkenvi
 import streamlit as st
-import speech_recognition as sr 
-#import pyaudio
-from googletrans import Translator 
-from gtts import gTTS   
-from io import BytesIO  
-#from IPython.display import Audio   #cho txt to speech
-#import base64   #cho txt to speech
+import requests
+from urllib.parse import urlparse, urljoin
+from bs4 import BeautifulSoup
+import colorama
+import time
+import base64
 
-def speech_to_text(lang):
-    # Create a speech recognition object
-    recognizer = sr.Recognizer()
-    # Record speech using the microphone
-    with sr.Microphone() as source:
-        audio = recognizer.listen(source)
-    # Convert speech to text
-    try:
-        text = recognizer.recognize_google(audio, language=lang)
-        #st.write(text)
-        return text
-    except sr.UnknownValueError:
-        #st.write("Không thể xác định giọng nói.")
-        return None
-    except sr.RequestError as e:
-        st.write(f"Lỗi: {e}")
-        #return None
+# init the colorama module
+colorama.init()
+
+GREEN = colorama.Fore.GREEN
+GRAY = colorama.Fore.LIGHTBLACK_EX
+RESET = colorama.Fore.RESET
+YELLOW = colorama.Fore.YELLOW
+
+# initialize the set of links (unique links)
+internal_urls = set()
+external_urls = set()
+
+total_urls_visited = 0
+
+
+def is_valid(url):
+    """
+    Checks whether `url` is a valid URL.
+    """
+    parsed = urlparse(url)
+    return bool(parsed.netloc) and bool(parsed.scheme)
+
+
+def get_all_website_links(url):
+
+    """
+    Returns all URLs that is found on `url` in which it belongs to the same website
+    """
+    # all URLs of `url`
+    urls = set()
+    soup = BeautifulSoup(requests.get(url).content, "html.parser")
+    for a_tag in soup.findAll("a"):
+        href = a_tag.attrs.get("href")
+        if href == "" or href is None:
+            # href empty tag
+            continue
+        # join the URL if it's relative (not absolute link)
+        href = urljoin(url, href)
+        parsed_href = urlparse(href)
+        # remove URL GET parameters, URL fragments, etc.
+        href = parsed_href.scheme + "://" + parsed_href.netloc + parsed_href.path
+        if not is_valid(href):
+            # not a valid URL
+            continue
+        if href in internal_urls:
+            # already in the set
+            continue
+        if domain_name not in href:
+            # external link
+            if href not in external_urls:
+                print(f"{GRAY}[!] External link: {href}{RESET}")
+                
+                external_urls.add(href)
+            continue
+        print(f"{GREEN}[*] Internal link: {href}{RESET}")
+
+        urls.add(href)
+        internal_urls.add(href)
+    return urls
+
+
+def crawl(url, max_urls):
+    """
+    Crawls a web page and extracts all links.
+    You'll find all links in `external_urls` and `internal_urls` global set variables.
+    params:
+        max_urls (int): number of max urls to crawl, default is 30.
+    """
+    global total_urls_visited
+    total_urls_visited += 1
+    time.sleep(0.01)
+    my_bar.progress(percent_complete + total_urls_visited/(max_urls+2))
+
+
+    print(f"{YELLOW}[*] Crawling: {url}{RESET}")
     
-def textsrc_to_textdest(l_text, lang_src,lang_dest):
-    translator = Translator()
-    translation = translator.translate(l_text, src=lang_src, dest=lang_dest)
-    #st.write(translation.text)
-    return translation.text
 
-def text_to_speech(text, lang='vi'):
-    try:
-        tts = gTTS(text, lang=lang)
-        audio_io = BytesIO()
-        tts.write_to_fp(audio_io)
-        audio_io.seek(0)
-        #st.success("Chuyển văn bản thành giọng nói thành công!")
-        return audio_io
-    except Exception as e:
-        #st.error(f"Lỗi: {e}")
-        return None
+    links = get_all_website_links(url)
 
 
-#######################################################
-st.subheader(":blue[Trò chuyện bằng tiếng Việt, Anh - Talk in Vietnamese, English]")
-vaichon = st.radio(":green[Select one of options:]", 
-                [":red[A.(Say Vi - Nói tiếng Việt):balloon:]", ":green[B.(Say En - Nói tiếng Anh):sunflower:]","STOP"], 
-                index=2,horizontal=True ) 
+    for i, link in enumerate(links):
 
-st.write("---")
-if vaichon == ":red[A.(Say Vi - Nói tiếng Việt):balloon:]":
-    st.write(":blue[Selected - Đã chọn:]", ":red[A.(Say Vi - Nói tiếng Việt):balloon:]" + ":blue[(Hãy nói gì đó...)]")
-    lang="vi-VN"
-    lang_src='vi'
-    lang_dest='en'
-elif vaichon==":green[B.(Say En - Nói tiếng Anh):sunflower:]":
-    st.write(":blue[Selected - Đã chọn:]", ":green[B.(Say En - Nói tiếng Anh):sunflower:]" + ":blue[(Say something...)]")
-    lang="en_US"
-    lang_src='en'
-    lang_dest='vi'
-else:    
-    st.write("")
-    lang=""
-    lang_src=''
-    lang_dest=''
+        if total_urls_visited > max_urls:
+            break
+        crawl(link, max_urls=max_urls)
 
-#B1: ghi am giong noi va chuyen thanh text
-if lang != '':
-    l_text = speech_to_text(lang)
-    st.write(l_text)
-    #B2: dich sang text En hoac Vi
-    if l_text is not None:
-        txt_translated = textsrc_to_textdest(l_text, lang_src, lang_dest)
-        st.write(txt_translated)
-    if l_text is not None:
-        audio_io = text_to_speech(txt_translated, lang_dest)
-        st.audio(audio_io, format="audio/wav",start_time=0)
+def get_binary_file_downloader_link(file_path, link_text):
+    with open(file_path, 'rb') as file:
+        data = file.read()
+    b64 = base64.b64encode(data).decode()
+    href = f'<a href="data:file/txt;base64,{b64}" download="{file_path}">{link_text}</a>'
+    return href
+
+
+################################################################################################
+
+if __name__ == "__main__":
+    st.title("Lấy website links và đọc data")
+    #st.subheader("(Chỉ để thử lập trình)")
+
+    
+    so_url_max_muon=st.radio("Giới hạn max số link thu thập từ 1 url :",["1", "10","100"],index=0,horizontal=True)
+    so_url_max=int(so_url_max_muon)
+
+
+    url_nhapvao = st.text_input(label=':red[Nhập URL của WEB muốn tìm link trong đó vào khung dưới đây]'+' (dạng ví dụ : https://nld.com.vn ) rồi Enter:',)
+
+    if url_nhapvao != '':
+
+        url = url_nhapvao
+        max_urls = so_url_max
+
+        # domain name of the URL without the protocol
+        domain_name = urlparse(url_nhapvao).netloc
+
+        my_bar = st.progress(0)
+        percent_complete=0.00
+
+        crawl(url, max_urls=max_urls)
+
+        #print("[+] Total Internal links:", len(internal_urls))
+        #print("[+] Total External links:", len(external_urls))
+        #print("[+] Total URLs:", len(external_urls) + len(internal_urls))
+        #print("[+] Total crawled URLs:", max_urls)
+        time.sleep(1)
+        my_bar.empty()
+
+        st.write("[+] Tổng số links ngoài:", len(external_urls))
+        st.write("[+] Tổng số links trong:", len(internal_urls))
+        st.write("[+] Tổng số URLs:", len(external_urls) + len(internal_urls))
+        st.write("[+] Tổng số links tối đa muốn thu thập từ mỗi url :", max_urls)
+
+        # save the internal links to a file
+        lsbox_in=[]
+        with open(f"{domain_name}_internal_links.txt", "w") as f:
+            for internal_link in internal_urls:
+                print(internal_link.strip(), file=f)
+                if "javascript" not in internal_link:
+                    lsbox_in.append(internal_link.strip())
+
+        lsbox_out=[]
+        # save the external links to a file
+        with open(f"{domain_name}_external_links.txt", "w") as ff:
+            for external_link in external_urls:
+                print(external_link.strip(), file=ff)
+                if "javascript" not in external_link:
+                    lsbox_out.append(external_link.strip())
+        
+        st.write("[-] Các links Internal đã được ghi trong file :", domain_name+"_internal_links.txt")
+        st.write("[-] Các links External đã được ghi trong file :", domain_name+"_external_links.txt")
+        st.markdown(get_binary_file_downloader_link(domain_name+"_internal_links.txt", "Nhấp để tải về file "+domain_name+"_internal_links.txt"), unsafe_allow_html=True)
+        st.markdown(get_binary_file_downloader_link(domain_name+"_external_links.txt", "Nhấp để tải về file "+domain_name+"_external_links.txt"), unsafe_allow_html=True)
+        
+        st.write('---')
+        radio_chon=st.radio(':red[Chọn một url đê xem trang web tương ứng :]',["external link","internal link"],index=0,horizontal=True)
+        if radio_chon=="external link":
+            url_option = st.selectbox(':red[Chọn một url đê xem trang web tương ứng :]',lsbox_out,label_visibility ="hidden")
+        else:
+            url_option = st.selectbox(':red[Chọn một url đê xem trang web tương ứng :]',lsbox_in,label_visibility ="hidden")
+        st.write(url_option)
