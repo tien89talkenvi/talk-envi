@@ -162,9 +162,9 @@ if __name__ == "__main__":
         st.markdown(get_binary_file_downloader_link(domain_name+"_external_links.txt", "Nhấp để tải về file "+domain_name+"_external_links.txt"), unsafe_allow_html=True)
         
         st.write('---')
-        st.markdown("<h5 style='color: red;'># Chọn một url đê xem trang web tương ứng :</h5> ", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: red;'># Chọn một url để xem trang web tương ứng</h5> ", unsafe_allow_html=True)
 
-        radio_chon=st.radio(':red[Chọn một url đê xem trang web tương ứng :]',["external link","internal link"],index=0,horizontal=True,label_visibility ="hidden")
+        radio_chon=st.radio(':red[Chọn một url đê xem trang web tương ứng :]',["external links","internal links"],index=0,horizontal=True,label_visibility ="hidden")
         
         if radio_chon=="external link":
             url_option = st.selectbox(':red[Chọn một url đê xem trang web tương ứng :]',lsbox_out,label_visibility ="hidden")
