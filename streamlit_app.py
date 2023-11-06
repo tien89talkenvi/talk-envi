@@ -1,5 +1,4 @@
 # https://tien89talkenvi-talk-envi-streamlit-app-ojqt7j.streamlit.app/
-
 import streamlit as st
 import requests
 from urllib.parse import urlparse, urljoin
@@ -58,11 +57,11 @@ def get_all_website_links(url):
         if domain_name not in href:
             # external link
             if href not in external_urls:
-                print(f"{GRAY}[!] External link: {href}{RESET}")
+                #print(f"{GRAY}[!] External link: {href}{RESET}")
                 
                 external_urls.add(href)
             continue
-        print(f"{GREEN}[*] Internal link: {href}{RESET}")
+        #print(f"{GREEN}[*] Internal link: {href}{RESET}")
 
         urls.add(href)
         internal_urls.add(href)
@@ -82,7 +81,7 @@ def crawl(url, max_urls):
     my_bar.progress(percent_complete + total_urls_visited/(max_urls+2))
 
 
-    print(f"{YELLOW}[*] Crawling: {url}{RESET}")
+    #print(f"{YELLOW}[*] Crawling: {url}{RESET}")
     
 
     links = get_all_website_links(url)
@@ -109,7 +108,7 @@ if __name__ == "__main__":
     #st.subheader("(Chỉ để thử lập trình)")
 
     
-    so_url_max_muon=st.radio("Giới hạn max số link thu thập từ 1 url :",["1", "10","100"],index=0,horizontal=True)
+    so_url_max_muon=st.radio("Giới hạn cấp độ lấy :",["1", "2","3","10","20","30"],index=0,horizontal=True)
     so_url_max=int(so_url_max_muon)
 
 
@@ -138,13 +137,13 @@ if __name__ == "__main__":
         st.write("[+] Tổng số links ngoài:", len(external_urls))
         st.write("[+] Tổng số links trong:", len(internal_urls))
         st.write("[+] Tổng số URLs:", len(external_urls) + len(internal_urls))
-        st.write("[+] Tổng số links tối đa muốn thu thập từ mỗi url :", max_urls)
+        st.write("[+] Cấp độ lấy :", max_urls)
 
         # save the internal links to a file
         lsbox_in=[]
         with open(f"{domain_name}_internal_links.txt", "w") as f:
             for internal_link in internal_urls:
-                print(internal_link.strip(), file=f)
+                #print(internal_link.strip(), file=f)
                 if "javascript" not in internal_link:
                     lsbox_in.append(internal_link.strip())
 
@@ -152,7 +151,7 @@ if __name__ == "__main__":
         # save the external links to a file
         with open(f"{domain_name}_external_links.txt", "w") as ff:
             for external_link in external_urls:
-                print(external_link.strip(), file=ff)
+                #print(external_link.strip(), file=ff)
                 if "javascript" not in external_link:
                     lsbox_out.append(external_link.strip())
         
