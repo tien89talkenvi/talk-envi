@@ -104,7 +104,7 @@ def get_binary_file_downloader_link(file_path, link_text):
 ################################################################################################
 
 if __name__ == "__main__":
-    st.title("Lấy website links và đọc data")
+    st.title("Lấy website links và xem nội dung")
     #st.subheader("(Chỉ để thử lập trình)")
 
     
