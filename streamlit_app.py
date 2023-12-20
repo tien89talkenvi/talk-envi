@@ -56,15 +56,14 @@ def get_all_website_links(url):
             continue
         if domain_name not in href:
             # external link
-            if href not in external_urls:
+            if href not in external_urls and len(href.strip()) > 14:
                 #print(f"{GRAY}[!] External link: {href}{RESET}")
-                
                 external_urls.add(href)
             continue
         #print(f"{GREEN}[*] Internal link: {href}{RESET}")
-
-        urls.add(href)
-        internal_urls.add(href)
+        if len(href.strip()) > 14:
+            urls.add(href)
+            internal_urls.add(href)
     return urls
 
 
@@ -144,22 +143,22 @@ if __name__ == "__main__":
         lsbox_in=[]
         with open(f"{domain_name}_internal_links.txt", "w") as f:
             for internal_link in internal_urls:
-                #print(internal_link.strip(), file=f)
-                if "javascript" not in internal_link:
+                if len(internal_link.strip()) > 14:
+                    print(internal_link.strip(), file=f)
                     lsbox_in.append(internal_link.strip())
 
         lsbox_out=[]
         # save the external links to a file
         with open(f"{domain_name}_external_links.txt", "w") as ff:
             for external_link in external_urls:
-                #print(external_link.strip(), file=ff)
-                if "javascript" not in external_link:
+                if len(external_link.strip()) > 14:
+                    print(external_link.strip(), file=ff)
                     lsbox_out.append(external_link.strip())
         
-        st.write("[-] Các links Internal đã được ghi trong file :", domain_name+"_internal_links.txt")
         st.write("[-] Các links External đã được ghi trong file :", domain_name+"_external_links.txt")
-        st.markdown(get_binary_file_downloader_link(domain_name+"_internal_links.txt", "Nhấp để tải về file "+domain_name+"_internal_links.txt"), unsafe_allow_html=True)
+        st.write("[-] Các links Internal đã được ghi trong file :", domain_name+"_internal_links.txt")
         st.markdown(get_binary_file_downloader_link(domain_name+"_external_links.txt", "Nhấp để tải về file "+domain_name+"_external_links.txt"), unsafe_allow_html=True)
+        st.markdown(get_binary_file_downloader_link(domain_name+"_internal_links.txt", "Nhấp để tải về file "+domain_name+"_internal_links.txt"), unsafe_allow_html=True)
         
         st.write('---')
         st.markdown("<h5 style='color: red;'># Chọn một url để xem trang web tương ứng</h5> ", unsafe_allow_html=True)
