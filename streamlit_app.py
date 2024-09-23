@@ -1,83 +1,129 @@
-############################################################################
-# Trinh lay phu de tren youtube-transcript-api
-# Neu khong co PD tren do thi no tu chuyen sang whisper-jax de lay phien am, 
-#chay rat mau neu api it user
-# Neu url empty hay is not yt thi no thoat ra
-# Khi trien khai tren icloud streamlit github thi chay khong dat.
- 
-### pip install:
-#streamlit==1.38.0
-#youtube-transcript-api==0.6.2
-#pytube==15.0.0
-#streamlit-input-box==0.0.3
-#gradio-client==1.3.0
-#############################################################################
 import streamlit as st
 import streamlit.components.v1 as components 
-from youtube_transcript_api import YouTubeTranscriptApi
 from pytube import YouTube, extract
 from streamlit_input_box import input_box
-from gradio_client import Client 
-import re
-#-----Chay rat tot tren laptop window nhung khi dua len gihub de chay tren icloud thi khong dat.Test mat 2 ngay van the 8-9-2024
-
-
+from subprocess import run
+import yt_dlp
+import os
+from faster_whisper import WhisperModel
+import tempfile
+import requests
 
 st.set_page_config(page_title="Speak Youtube Subtitles", layout="wide")
 st.markdown(" <style> div[class^='block-container'] { padding-top: 1.8rem;} ", unsafe_allow_html=True)
-
-      
-
-#----Set background----------------------------------------------------------------------------------------
-#st.set_page_config(page_title="Video với dịch & đọc phụ đề En-Vi", page_icon="🚀", layout="centered",)     
-#st.markdown(f"""
-#            <style>
-#            .stApp {{background-image: linear-gradient(0deg,lightgrey,lightgrey);
-#            background-attachment: fixed;
-#            background-size: cover}}
-#        </style>
-#         """, unsafe_allow_html=True)
-
 #----------------------------------------------------------------------------------------------------------
-def Lay_videoID(url_vid_input):
-    try:
-        id_ofvid = extract.video_id(url_vid_input)
-        return id_ofvid
-    except:
-        return None
+#@st.cache_data
+#def ydl_download_audio(url_yt):
+#    #'https://www.youtube.com/watch?v=BaW_jenozKc' url ua 1 tep audio rat ngan
+#    lenh = 'yt-dlp --extract-audio --audio-format wav --audio-quality 0 -o audioyt.%(ext)s --yes-overwrites '+url_yt
+#    l_lenh=lenh.split(' ')
+#    run(l_lenh) # cai nay de ra tep audioyt.m4a 
+#    return "audioyt.wav"
 
-def Lay_transcript_en(videoID):
+def download_yt_audio(url_yt,filename):
+    # filename thuc ra la pathfilename thay doi moi khi me no truyen vao
+    ydl_opts = {
+        "format" : 'bestaudio/best',
+        "outtmpl": filename,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download(url_yt)    # kq la tep .webm
+    return filename    
+
+def Lay_id_tde_tluong(url_yt):
     try:
-        transcript_list = YouTubeTranscriptApi.list_transcripts(videoID)
-        for transcript in transcript_list:
-            if transcript.language_code[0:2] != "en":
-                # lay ban dich sang tieng anh
-                transcript_en = transcript.translate("en").fetch()
-            else:
-                # ban dich goc la tieng anh
-                transcript_en = transcript.fetch()
+        videoID = extract.video_id(url_yt)
+        tieude = YouTube(url_yt).title
+        tluong = YouTube(url_yt).length
+        return videoID,tieude,tluong
+    except:
+        return None,None,None
+
+def doi_hhmmss_000_giay(hhmmss_000):
+    #vd: hhmmss_000 = "12:01:1.01"
+    # Tao list va dao nguoc list
+    listh = (hhmmss_000.split(":"))[::-1]
+    mtotal=0
+    sonhan=1
+    for i, pt in enumerate(listh):
+        if i==0:
+            sonhan=1
+        elif i==1:
+            sonhan=60
+        elif i==2:
+            sonhan=3600        
+        mtotal=mtotal+float(pt)*sonhan
+    # Dinh dang mtotal la string voi 3 cs thap pjhan
+    mtotal="%.3f" %mtotal
+    #print(mtotal)
+    # 43261.01
+    return mtotal
+
+@st.cache_data
+def Lay_transcript_en(url_yt):
+    try:
+        ydl_opts = {}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url_yt, download=False)
+        if info_dict["automatic_captions"]:
+            #Trong info_dict["automatic_captions"]['en'] o vi tri ap chot la url cua ttml
+            url_ttml = info_dict["automatic_captions"]['en'][-2]['url']
+            # lay text tu url de rut ra transcript_en
+            f=requests.get(url_ttml)
+            textall = f.text
+            vtpdau=textall.find("<p")
+            textlay=textall[vtpdau:]
+            vtdivc=textlay.find("</div>")
+            textlay=textlay[:vtdivc]
+            l_textlay=textlay.split("\n")
+            l_textlays=[]
+            for pt in l_textlay:
+                if pt.strip() !='':
+                    l_textlays.append(pt.strip())
+            #print(l_textlays, len(l_textlays))
+            transcript_en = []
+            for j,dong in enumerate(l_textlays):
+                tim=dong.split(">")[0]
+                startt=tim.split(" ")[1]
+                endt=tim.split(" ")[2]
+                starts=startt.split('="')[1][:-2]
+                ends=endt.split('="')[1][:-2]
+                #print(len(starts),len(ends))
+                startcc=doi_hhmmss_000_giay(starts)    
+                endcc=doi_hhmmss_000_giay(ends)
+                #print(startcc,endcc)
+                text=dong.split(">")[1].split("<")[0]
+                dictpt={}
+                dictpt['start']=startcc
+                dictpt['end']=endcc
+                dictpt['text']=text
+                transcript_en.append(dictpt)
+                #print(startcc,endcc,text)
+            #print(transcript_en)
+            # Lenh CMD de download subtitle tu dong dich sang en cho ra file ttml ghi de khong can hoi
+            #luu de nc lenh='yt-dlp -o subyt.%(ext)s --skip-download --write-auto-subs --sub-format ttml --yes-overwrites'+' '+url_yt
             return transcript_en
     except:
-        # ban dich en la None
-        transcript_en = None
+        print('Loi!')
+        transcript_en=[]
         return transcript_en
 
+
 #-------------------------------------------------------------
-@st.cache_data
+#@st.cache_data
 def Lap_html_video(transcript_en, videoID,langSourceText):
     chp = ''
     for pt_dict in transcript_en:
         start = pt_dict['start']
-        durat = pt_dict['duration']
+        end = pt_dict['end']
         text = pt_dict['text']
         chp1 = '<div class="f-grid">\n'
-        chp2 = '<div class="youtube-marker-l" data-start='+'"'+str(start)+'"' + ' data-end='+'"'+str(round(start+durat,3))+'"'+'>'+text+'</div>\n'
-        chp3 = '<div class="youtube-marker-r" data-start='+'"'+str(start)+'"' + ' data-end='+'"'+str(round(start+durat,3))+'"'+'></div>\n'
+        chp2 = '<div class="youtube-marker-l" data-start='+'"'+start+'"' + ' data-end='+'"'+end+'"'+'>'+text+'</div>\n'
+        chp3 = '<div class="youtube-marker-r" data-start='+'"'+start+'"' + ' data-end='+'"'+end+'"'+'></div>\n'
         chp4 = '</div>\n' 
         chp = chp + chp1 + chp2 + chp3 +chp4
     # in chp de copy dan vao html     
     #print(chp)    
-  
     sty='''
         body{
             background:lightgray;
@@ -163,9 +209,7 @@ def Lap_html_video(transcript_en, videoID,langSourceText):
             text-align: center;
             border-radius: 50%;
             border: none;} 
-        
         '''
-
     js1='''
         //bien global
         var strBuffer = {};
@@ -466,54 +510,39 @@ def Lap_html_video(transcript_en, videoID,langSourceText):
                 """,height=900,scrolling=True)
 
 @st.cache_data
-def Get_transciption_from_whisperjax(url_yt):
-    client = Client("https://sanchit-gandhi-whisper-jax.hf.space/", hf_token = "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" )
-    #(khai bao hf_token = "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" se on dinh hon)
-    video_html,transcription_str,transcription_time_s_str = client.predict(url_yt, "translate", True, api_name="/predict_2")
-    return transcription_str
-
-@st.cache_data
-def doi_ra_giay(h_m_s000):
-    lh_m_s000=h_m_s000.split(":")
-    #print(lh_m_s000)
-    r=0.000
-    for i,pt in enumerate(reversed(lh_m_s000)):
-        if i==0:
-            r=r+float(pt)
-        if i==1:
-            r=r+60*float(pt)
-        if i==2:
-            r=r+3600*float(pt)
-    return r
-
-@st.cache_data
-def transcription_to_json(my_text):
-    listof_dict_json = [] 
-    #([01:52.760 -> 01:53.100]  Dang text skills.)
-    my_text=my_text.strip()
-    lmy_text=my_text.split('\n')
-    for dong in lmy_text:
-        timestemp=dong.split(']')[0][1:]
-        strstart=timestemp.split(' -> ')[0]
-        strend=timestemp.split(' -> ')[1]
-        strtext=dong.split(']')[1].strip()
-        r_start= doi_ra_giay(strstart)
-        r_end= doi_ra_giay(strend)
-        ptdictnew = {}
-        ptdictnew["text"] = strtext
-        ptdictnew["start"] = round(r_start,3)
-        ptdictnew["duration"] = round(r_end - r_start,3)
-        listof_dict_json.append(ptdictnew)
-    return listof_dict_json
-
- 
-#def Find_url_hople(string):
-#    regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
-#    url = re.findall(regex, string)
-#    return [x[0] for x in url]
-
-
-
+def get_subtu_fastwhisper(url_yt):
+    try:
+        # Moi khi ham nay chay thi tao ra mot thu muc tam voi ten nau nhien moi, xong viec thi xoa
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            filepath = os.path.join(tmpdirname, "audioyt.wav")
+            filepath = download_yt_audio(url_yt, filepath)
+            #with open(filepath, "rb") as f:
+            #    data_inputs = f.read()
+            #st.audio(data_inputs)
+            model = WhisperModel("base", device="cpu", compute_type="int8") #
+            segments, info = model.transcribe(filepath)
+            langnhanra = info.language
+            listdongs=[]
+            for segment in segments:
+                dongtext="[%.3fs -> %.3fs] %s" % (segment.start, segment.end, segment.text)
+                listdongs.append(dongtext)
+                #print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+            # Dua [[0.000s -> 9.000s]  Now, the VOA,...]  ve dang json: [{'start':'001.234', 'end':'005.567','text':'tien'},...]
+            list_dict_dong=[]
+            for dong in listdongs:
+                #dong co dang: [0.000s -> 9.000s]  Now, the VOA.
+                dictdong={}
+                dong_time=dong.strip().split("]")[0][1:] #dang: 0.000s -> 9.000s
+                dictdong['start']=dong_time.split(" -> ")[0][:-2]
+                dictdong['end']=dong_time.split(" -> ")[1][:-2]
+                dictdong['text']=dong.strip().split("]")[1].strip()
+                list_dict_dong.append(dictdong)
+            return list_dict_dong,langnhanra
+    except:
+        print('Loi')
+        list_dict_dong=[]
+        langnhanra=''
+        return list_dict_dong,langnhanra
 #==============================================================================
 #https://youtu.be/3c-iBn73dDE?si=loeUZPwUmmh0iGW4   2h 40phut
 #https://youtu.be/DpxxTryJ2fY?si=oMvtK4Nqt-y6Een9   BIGATE          ok en vi
@@ -526,36 +555,53 @@ def transcription_to_json(my_text):
 #https://youtu.be/8QlXeGWS-EU?si=vPyl1aFhfCPEEEzK beo dat
 #---Bat Dau Main ------------------------------------------------------------------------------------------------
 tbaodong1 = st.empty()
-tbaodong1.write("<h4 style='text-align: center; color: green;'>YT VIDEO FOR LISTENING SUBTITLES</h4>", unsafe_allow_html=True)
+tbaodong1.write("<h2 style='text-align: center; color: green;'>VIDEO FOR LISTENING SUBTITLES</h2>", unsafe_allow_html=True)
 link_vidu="https://youtu.be/DpxxTryJ2fY?si=oMvtK4Nqt-y6Een9"
-tbaodong2 = st.markdown("<h5 style='text-align: center; color: red;'>"+"Enter youtube uUrl (ex. "+link_vidu+" )"+"</h5>", unsafe_allow_html=True)
+tbaodong2 = st.markdown("<h6 style='text-align: center; color: lightblue;'>"+link_vidu+"</h6>", unsafe_allow_html=True)
 
 
 url_yt=input_box(min_lines=1,max_lines=3,just_once=True)
+tbaodong3 = st.empty()
+tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
 
-tbaodong3=st.empty()
+if url_yt:
+    videoID,tieude,tluong = Lay_id_tde_tluong(url_yt)
+    if videoID:
+        tbaodong3.write(':blue[Lấy phụ đề từ yt_dlp...]')
+        transcript_en = Lay_transcript_en(url_yt)
+        if transcript_en:
+            Lap_html_video(transcript_en, videoID, langSourceText="en")
+            tbaodong3.write("<h4 style='text-align: center; color:orange;'>"+tieude+"</h4>", unsafe_allow_html=True)
+            st.write('---')
+            st.write('Video này dài  ' + str(int(tluong/60)+1) + ' phút. (Có thể bị cắt khi quá 120 phút!)')
+            st.balloons()
+        else:   # khong co transcript_en tai Yt thi phai lay ai api whjax, cung chua co f audio
+            tbaodong3.write(':green[Xin đợi phiên âm từ Fast-Whisper do không có phụ đề trên yt...Có thể phải làm lại cho đén khi thành công!]')
+            transcript_language,langnhanra = get_subtu_fastwhisper(url_yt)
+            #print(transcript_language,langnhanra)
+            if transcript_language:
+                Lap_html_video(transcript_language, videoID, langSourceText=langnhanra)
+                tbaodong3.write("<h4 style='text-align: center; color:orange;'>"+tieude+"</h4>", unsafe_allow_html=True)
+                st.write('---')
+                st.write('Video này dài  ' + str(int(tluong/60)+1) + ' phút. (Có thể bị cắt khi quá 120 phút!)')
+                st.balloons()
+            else:
+                tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
+                pass
+#Improve your English 👍_ Very Interesting Story - Level 3 - The History of America _ VOA #7
+# 7-https://youtu.be/WCZ2-SIT7W8?si=eUAWum9rCDYEsjY8
 
-# ham nay tra ve videoID hop le co hoac la None
-videoID = Lay_videoID(url_yt)
-if videoID:
-    # ham nay tra ve transcript_en co hoac la None
-    transcript_en = Lay_transcript_en(videoID)
-    if transcript_en: # neu co ban en
-        tbaodong2.markdown("<h6 style='text-align: center; color: lightgrey;'>"+url_yt+"</h6>", unsafe_allow_html=True)
-        Lap_html_video(transcript_en, videoID, langSourceText="en")
-        tbaodong1.write("<h4 style='text-align: center; color:orange;'>"+YouTube(url_yt).title+"</h4>", unsafe_allow_html=True)
-        tbaodong3.empty()
-        st.write('---')
-        st.write('Video nay dai : ' + str(int(YouTube(url_yt).length/60)+1) + ' phut. (Quá 120 phút có thể bị cắt!)')
-        st.balloons()
-    else: # transcript_en la None
-        print('lay tu whjax')
-        tbaodong3.write(':red[Đợi lấy phiên âm từ API Whisper-Jax vì Yt không có phiên âm cho link này...Có thể phải làm lại cho đén khi thành công!]')
-        #transcript_en = Get_transciption_from_whisperjax(url_yt)
-        #listof_dict_json = transcription_to_json(transcript_en)
-        #Lap_html_video(listof_dict_json, videoID, langSourceText="en")
-        tbaodong1.write("<h4 style='text-align: center; color:orange;'>"+YouTube(url_yt).title+"</h4>", unsafe_allow_html=True)
-        tbaodong3.empty()
-        st.write('---')
-        st.write('Video nay dai : ' + str(int(YouTube(url_yt).length/60)+1) + ' phut. (Quá 120 phút có thể bị cắt!)')
-        st.balloons()
+#Improve your English ⭐ | Very Interesting Story - Level 3 - Million Pound Bank Note | VOA #8
+# 8-https://youtu.be/G_uExyg8M2A?si=hFnMcBJCndcyiApg
+
+#Improve your English ⭐ | Very Interesting Story - Level 3 - The Great Gatsby P1 | VOA #9
+# 9-https://youtu.be/4ONCixK4z1A?si=mDV3a0ru82g-_fTe
+
+#Improve your English ⭐ | Very Interesting Story - Level 3 - History of the USA | VOA #10
+# 10-https://youtu.be/K9W6v57l6Ag?si=Tz6EZk6a66hS_lWo
+
+#Improve your English ⭐ | Very Interesting Story - Level 3 - Aesop's Fables | VOA #11
+# 11- https://youtu.be/4aqjFp1o9iE?si=t5_tl56iR8hVmsnj
+
+#Improve your English ⭐ | Very Interesting Story - Level 3 - Beauty's Sacrifice | VOA #12
+# 12-https://youtu.be/HdGN08QZqlY?si=LQlDfyEvvsn-Id2S
