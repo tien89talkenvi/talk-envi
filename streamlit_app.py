@@ -24,6 +24,7 @@ st.markdown(" <style> div[class^='block-container'] { padding-top: 1.8rem;} ", u
 def download_yt_audio(url_yt,filename):
     # filename thuc ra la pathfilename thay doi moi khi me no truyen vao
     ydl_opts = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         "format" : 'bestaudio/best',
         "outtmpl": filename,
     }
@@ -67,7 +68,9 @@ def doi_hhmmss_000_giay(hhmmss_000):
 def Lay_transcript_en(url_yt):
     try:
         #1-Lay cac info cua url_yt
-        ydl_opts = {}
+        ydl_opts = {
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url_yt, download=False)
         #2-Lay url cua caption en do yt tao ra auto chua trong info tren    
@@ -573,7 +576,7 @@ if url_yt:
         else:   # khong co transcript_en tai Yt thi phai lay ai api whjax, cung chua co f audio
             tbaodong3.write(':red[Không có phụ đề từ yt_dlp!]')
             time.sleep(1)
-            tbaodong3.write(':green[Xin đợi phiên âm từ Fast-Whisper do không có phụ đề trên yt...Có thể phải làm lại cho đén khi thành công!]')
+            tbaodong3.write(':green[Xin đợi phiên âm từ Fast-Whisper do không có phụ đề trên yt...]')
             transcript_language,langnhanra = get_subtu_fastwhisper(url_yt)
             #print(transcript_language,langnhanra)
             if transcript_language:
