@@ -8,6 +8,7 @@ import os
 from faster_whisper import WhisperModel
 import tempfile
 import requests
+import time
 
 st.set_page_config(page_title="Speak Youtube Subtitles", layout="wide")
 st.markdown(" <style> div[class^='block-container'] { padding-top: 1.8rem;} ", unsafe_allow_html=True)
@@ -37,6 +38,9 @@ def Lay_id_tde_tluong(url_yt):
         tluong = YouTube(url_yt).length
         return videoID,tieude,tluong
     except:
+        tbaodong3.write(':red[Url Yt khong hop le!]')
+        time.sleep(1)
+        tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
         return None,None,None
 
 def doi_hhmmss_000_giay(hhmmss_000):
@@ -62,15 +66,19 @@ def doi_hhmmss_000_giay(hhmmss_000):
 @st.cache_data
 def Lay_transcript_en(url_yt):
     try:
+        #1-Lay cac info cua url_yt
         ydl_opts = {}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url_yt, download=False)
+        #2-Lay url cua caption en do yt tao ra auto chua trong info tren    
         if info_dict["automatic_captions"]:
             #Trong info_dict["automatic_captions"]['en'] o vi tri ap chot la url cua ttml
             url_ttml = info_dict["automatic_captions"]['en'][-2]['url']
-            # lay text tu url de rut ra transcript_en
+            #3-lay text tu url de rut ra transcript_en
             f=requests.get(url_ttml)
             textall = f.text
+            #return textall
+            #chuen doi textall trong tep ttml sang list dict
             vtpdau=textall.find("<p")
             textlay=textall[vtpdau:]
             vtdivc=textlay.find("</div>")
@@ -98,17 +106,13 @@ def Lay_transcript_en(url_yt):
                 dictpt['end']=endcc
                 dictpt['text']=text
                 transcript_en.append(dictpt)
-                #print(startcc,endcc,text)
+            #print(startcc,endcc,text)
             #print(transcript_en)
             # Lenh CMD de download subtitle tu dong dich sang en cho ra file ttml ghi de khong can hoi
             #luu de nc lenh='yt-dlp -o subyt.%(ext)s --skip-download --write-auto-subs --sub-format ttml --yes-overwrites'+' '+url_yt
             return transcript_en
     except:
-        print('Loi!')
-        transcript_en=[]
-        return transcript_en
-
-
+        return []
 #-------------------------------------------------------------
 #@st.cache_data
 def Lap_html_video(transcript_en, videoID,langSourceText):
@@ -543,17 +547,8 @@ def get_subtu_fastwhisper(url_yt):
         list_dict_dong=[]
         langnhanra=''
         return list_dict_dong,langnhanra
-#==============================================================================
-#https://youtu.be/3c-iBn73dDE?si=loeUZPwUmmh0iGW4   2h 40phut
-#https://youtu.be/DpxxTryJ2fY?si=oMvtK4Nqt-y6Een9   BIGATE          ok en vi
-#https://youtu.be/zBHxv8gbleg?si=zeo5OQ_cx5XsQgeG   TRUMP           ok en vi
-#https://www.youtube.com/embed/lcZDWo6hiuI          Gs University   ok en vi
-#https://www.youtube.com/watch?v=Z2iXr8On3LI        voa anh van     no en no vi (not is yt)
-#https://youtu.be/Zgfi7wnGZlE?si=TzeWpiERRxzdJKVA   obama           ok en vi (#1h)
-#https://youtu.be/d6k48XVpgcM?si=F6f6VjqTQSTk8mwZ   tin Viet
-#https://www.youtube.com/embed/e079x_gKE3Xp_Bt      che lai
-#https://youtu.be/8QlXeGWS-EU?si=vPyl1aFhfCPEEEzK beo dat
-#---Bat Dau Main ------------------------------------------------------------------------------------------------
+
+#==Bat Dau Main============================================================================
 tbaodong1 = st.empty()
 tbaodong1.write("<h2 style='text-align: center; color: green;'>VIDEO FOR LISTENING SUBTITLES</h2>", unsafe_allow_html=True)
 link_vidu="https://youtu.be/DpxxTryJ2fY?si=oMvtK4Nqt-y6Een9"
@@ -576,6 +571,8 @@ if url_yt:
             st.write('Video này dài  ' + str(int(tluong/60)+1) + ' phút. (Có thể bị cắt khi quá 120 phút!)')
             st.balloons()
         else:   # khong co transcript_en tai Yt thi phai lay ai api whjax, cung chua co f audio
+            tbaodong3.write(':red[Không có phụ đề từ yt_dlp!]')
+            time.sleep(1)
             tbaodong3.write(':green[Xin đợi phiên âm từ Fast-Whisper do không có phụ đề trên yt...Có thể phải làm lại cho đén khi thành công!]')
             transcript_language,langnhanra = get_subtu_fastwhisper(url_yt)
             #print(transcript_language,langnhanra)
@@ -587,21 +584,3 @@ if url_yt:
                 st.balloons()
             else:
                 tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
-                pass
-#Improve your English 👍_ Very Interesting Story - Level 3 - The History of America _ VOA #7
-# 7-https://youtu.be/WCZ2-SIT7W8?si=eUAWum9rCDYEsjY8
-
-#Improve your English ⭐ | Very Interesting Story - Level 3 - Million Pound Bank Note | VOA #8
-# 8-https://youtu.be/G_uExyg8M2A?si=hFnMcBJCndcyiApg
-
-#Improve your English ⭐ | Very Interesting Story - Level 3 - The Great Gatsby P1 | VOA #9
-# 9-https://youtu.be/4ONCixK4z1A?si=mDV3a0ru82g-_fTe
-
-#Improve your English ⭐ | Very Interesting Story - Level 3 - History of the USA | VOA #10
-# 10-https://youtu.be/K9W6v57l6Ag?si=Tz6EZk6a66hS_lWo
-
-#Improve your English ⭐ | Very Interesting Story - Level 3 - Aesop's Fables | VOA #11
-# 11- https://youtu.be/4aqjFp1o9iE?si=t5_tl56iR8hVmsnj
-
-#Improve your English ⭐ | Very Interesting Story - Level 3 - Beauty's Sacrifice | VOA #12
-# 12-https://youtu.be/HdGN08QZqlY?si=LQlDfyEvvsn-Id2S
