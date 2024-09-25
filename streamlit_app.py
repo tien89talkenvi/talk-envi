@@ -7,7 +7,6 @@ import yt_dlp
 import os
 from faster_whisper import WhisperModel
 import tempfile
-import requests
 import time
 
 st.set_page_config(page_title="Speak Youtube Subtitles", layout="wide")
@@ -67,55 +66,47 @@ def doi_hhmmss_000_giay(hhmmss_000):
 @st.cache_data
 def Lay_transcript_en(url_yt):
     try:
-        #1-Lay cac info cua url_yt
-        ydl_opts = {
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url_yt, download=False)
-        #2-Lay url cua caption en do yt tao ra auto chua trong info tren    
-        if info_dict["automatic_captions"]:
-            #Trong info_dict["automatic_captions"]['en'] o vi tri ap chot la url cua ttml
-            url_ttml = info_dict["automatic_captions"]['en'][-2]['url']
-            #3-lay text tu url de rut ra transcript_en
-            f=requests.get(url_ttml)
-            textall = f.text
-            #return textall
-            #chuen doi textall trong tep ttml sang list dict
-            vtpdau=textall.find("<p")
-            textlay=textall[vtpdau:]
-            vtdivc=textlay.find("</div>")
-            textlay=textlay[:vtdivc]
-            l_textlay=textlay.split("\n")
-            l_textlays=[]
-            for pt in l_textlay:
-                if pt.strip() !='':
-                    l_textlays.append(pt.strip())
-            #print(l_textlays, len(l_textlays))
-            transcript_en = []
-            for j,dong in enumerate(l_textlays):
-                tim=dong.split(">")[0]
-                startt=tim.split(" ")[1]
-                endt=tim.split(" ")[2]
-                starts=startt.split('="')[1][:-2]
-                ends=endt.split('="')[1][:-2]
-                #print(len(starts),len(ends))
-                startcc=doi_hhmmss_000_giay(starts)    
-                endcc=doi_hhmmss_000_giay(ends)
-                #print(startcc,endcc)
-                text=dong.split(">")[1].split("<")[0]
-                dictpt={}
-                dictpt['start']=startcc
-                dictpt['end']=endcc
-                dictpt['text']=text
-                transcript_en.append(dictpt)
-            #print(startcc,endcc,text)
-            #print(transcript_en)
-            # Lenh CMD de download subtitle tu dong dich sang en cho ra file ttml ghi de khong can hoi
-            #luu de nc lenh='yt-dlp -o subyt.%(ext)s --skip-download --write-auto-subs --sub-format ttml --yes-overwrites'+' '+url_yt
-            return transcript_en
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            filepath = os.path.join(tmpdirname, "subyt")
+        # lenh cmd: yt-dlp hay tai ve file subyt.en.tml va ghi de le cu neu co tu url da cho
+        lenhcmd = 'yt-dlp -o '+filepath+'.%(ext)s --skip-download --write-auto-subs --sub-format ttml --yes-overwrites '+url_yt
+        l_lenhcmd=lenhcmd.split(' ')
+        run(l_lenhcmd)
+        with open(filepath+'.en.ttml', 'r') as fsub:
+            textall = fsub.read()
+        #chuyen doi textall trong tep ttml sang list dict
+        vtpdau=textall.find("<p")
+        textlay=textall[vtpdau:]
+        vtdivc=textlay.find("</div>")
+        textlay=textlay[:vtdivc]
+        l_textlay=textlay.split("\n")
+        l_textlays=[]
+        for pt in l_textlay:
+            if pt.strip() !='':
+                l_textlays.append(pt.strip())
+        #print(l_textlays, len(l_textlays))
+        transcript_en = []
+        for j,dong in enumerate(l_textlays):
+            tim=dong.split(">")[0]
+            startt=tim.split(" ")[1]
+            endt=tim.split(" ")[2]
+            starts=startt.split('="')[1][:-2]
+            ends=endt.split('="')[1][:-2]
+            #print(len(starts),len(ends))
+            startcc=doi_hhmmss_000_giay(starts)    
+            endcc=doi_hhmmss_000_giay(ends)
+            #print(startcc,endcc)
+            text=dong.split(">")[1].split("<")[0]
+            dictpt={}
+            dictpt['start']=startcc
+            dictpt['end']=endcc
+            dictpt['text']=text
+            transcript_en.append(dictpt)
+        return transcript_en
     except:
-        return []
+        print('Da xay ra loi o Lay_transcript_en!')
+        transcript_en=[]
+        return transcript_en
 #-------------------------------------------------------------
 #@st.cache_data
 def Lap_html_video(transcript_en, videoID,langSourceText):
@@ -521,32 +512,34 @@ def get_subtu_fastwhisper(url_yt):
     try:
         # Moi khi ham nay chay thi tao ra mot thu muc tam voi ten nau nhien moi, xong viec thi xoa
         with tempfile.TemporaryDirectory() as tmpdirname:
-            filepath = os.path.join(tmpdirname, "audioyt.wav")
-            filepath = download_yt_audio(url_yt, filepath)
-            #with open(filepath, "rb") as f:
-            #    data_inputs = f.read()
-            #st.audio(data_inputs)
-            model = WhisperModel("base", device="cpu", compute_type="int8") #
-            segments, info = model.transcribe(filepath)
-            langnhanra = info.language
-            listdongs=[]
-            for segment in segments:
-                dongtext="[%.3fs -> %.3fs] %s" % (segment.start, segment.end, segment.text)
-                listdongs.append(dongtext)
-                #print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-            # Dua [[0.000s -> 9.000s]  Now, the VOA,...]  ve dang json: [{'start':'001.234', 'end':'005.567','text':'tien'},...]
-            list_dict_dong=[]
-            for dong in listdongs:
-                #dong co dang: [0.000s -> 9.000s]  Now, the VOA.
-                dictdong={}
-                dong_time=dong.strip().split("]")[0][1:] #dang: 0.000s -> 9.000s
-                dictdong['start']=dong_time.split(" -> ")[0][:-2]
-                dictdong['end']=dong_time.split(" -> ")[1][:-2]
-                dictdong['text']=dong.strip().split("]")[1].strip()
-                list_dict_dong.append(dictdong)
-            return list_dict_dong,langnhanra
+            filepath = os.path.join(tmpdirname, "audioyt")
+        #lenhcmd = 'yt-dlp -x --extract-audio -o '+filepath+'.%(ext)s --yes-overwrites '+URL_YT
+        # Specify audio format and audio quality of extracted audio (between 0 (best) and 10 (worst), default = 5):
+        lenhcmd = 'yt-dlp --extract-audio --audio-format wav --audio-quality 0 -o '+filepath+'.%(ext)s --yes-overwrites '+url_yt
+        l_lenhcmd=lenhcmd.split(' ')
+        run(l_lenhcmd)
+
+        model = WhisperModel("base", device="cpu", compute_type="int8") #
+        segments, info = model.transcribe(filepath+'.wav')
+        langnhanra = info.language
+        listdongs=[]
+        for segment in segments:
+            dongtext="[%.3fs -> %.3fs] %s" % (segment.start, segment.end, segment.text)
+            listdongs.append(dongtext)
+            #print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+        # Dua [[0.000s -> 9.000s]  Now, the VOA,...]  ve dang json: [{'start':'001.234', 'end':'005.567','text':'tien'},...]
+        list_dict_dong=[]
+        for dong in listdongs:
+            #dong co dang: [0.000s -> 9.000s]  Now, the VOA.
+            dictdong={}
+            dong_time=dong.strip().split("]")[0][1:] #dang: 0.000s -> 9.000s
+            dictdong['start']=dong_time.split(" -> ")[0][:-2]
+            dictdong['end']=dong_time.split(" -> ")[1][:-2]
+            dictdong['text']=dong.strip().split("]")[1].strip()
+            list_dict_dong.append(dictdong)
+        return list_dict_dong,langnhanra
     except:
-        print('Loi')
+        print('Da Loi o try fast whisper')
         list_dict_dong=[]
         langnhanra=''
         return list_dict_dong,langnhanra
