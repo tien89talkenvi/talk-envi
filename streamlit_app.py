@@ -1,582 +1,549 @@
+# SHA256:RoAD9Z4kYydmuiQnyfJBZJXBKR4K7wariN94kO3MJgI
 import streamlit as st
-import streamlit.components.v1 as components 
-from pytube import YouTube, extract
-from streamlit_input_box import input_box
-from subprocess import run
+import textwrap
 import yt_dlp
+import requests
+#--------------
+import json
+#import streamlit.components.v1 as components 
 import os
-from faster_whisper import WhisperModel
-import tempfile
+import xml.etree.ElementTree as ET
 import time
+from urllib.parse import urlparse, parse_qs
 
-st.set_page_config(page_title="Speak Youtube Subtitles", layout="wide")
-st.markdown(" <style> div[class^='block-container'] { padding-top: 1.8rem;} ", unsafe_allow_html=True)
-#----------------------------------------------------------------------------------------------------------
-#@st.cache_data
-#def ydl_download_audio(url_yt):
-#    #'https://www.youtube.com/watch?v=BaW_jenozKc' url ua 1 tep audio rat ngan
-#    lenh = 'yt-dlp --extract-audio --audio-format wav --audio-quality 0 -o audioyt.%(ext)s --yes-overwrites '+url_yt
-#    l_lenh=lenh.split(' ')
-#    run(l_lenh) # cai nay de ra tep audioyt.m4a 
-#    return "audioyt.wav"
+#----------------------- cac def ---------------------
+def get_subtitle_urls(info_dict):
+    def extract_urls(subs_dict):
+        urls = {}
+        for lang, tracks in subs_dict.items():
+            ttml_url = None
+            for track in tracks:
+                ext = track.get("ext")
+                if ext == "ttml" and not ttml_url:
+                    ttml_url = track.get("url")
+            # Ưu tiên TTML, fallback sang VTT nếu không có
+            if ttml_url:
+                urls[lang] = {"ext": "ttml", "url": ttml_url}
+        return urls
 
-def download_yt_audio(url_yt,filename):
-    # filename thuc ra la pathfilename thay doi moi khi me no truyen vao
+    subtitles = info_dict.get("subtitles", {})
+    auto_captions = info_dict.get("automatic_captions", {})
+
+    return {
+        "official_subtitles": extract_urls(subtitles),
+        "automatic_captions": extract_urls(auto_captions)
+    }
+
+def time_to_seconds(t):
+    h, m, s = t.split(':')
+    return int(h) * 3600 + int(m) * 60 + float(s)
+
+def parse_ttml_with_seconds(ttml_string):
+    root = ET.fromstring(ttml_string)
+    namespace = {'ttml': root.tag.split('}')[0].strip('{')}
+
+    subtitles = []
+    for p in root.findall('.//ttml:body//ttml:p', namespaces=namespace):
+        begin = p.attrib.get('begin')
+        end = p.attrib.get('end')
+        text = ''.join(p.itertext()).strip()
+
+        if begin and end and text:
+            subtitles.append({
+                'start': round(time_to_seconds(begin),3),
+                'end': round(time_to_seconds(end),3),
+                'text': text,
+                'textdich': ""
+            })
+    return subtitles
+
+
+#--------------------------MAIN ---------------------------------------
+def lay_Id_Title_Sub(url):
+    video_url = url
     ydl_opts = {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        "format" : 'bestaudio/best',
-        "outtmpl": filename,
+        'quiet': True,
+        'no_warnings': True,
+        'ratelimit': 500000,  # giới hạn tốc độ tải: 500 KB/s
+        #'sleep_interval_requests': 2,  # nghỉ 2 giây giữa các request
+        'skip_download': True,
+        'forcejson': True
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download(url_yt)    # kq la tep .webm
-    return filename    
+        info_dict = ydl.extract_info(video_url, download=False)
+        videoID = info_dict['id']
+        tieude = info_dict['title']
+        print("videoID: ",videoID)
+        print("Tieu de: ",tieude)
+        # xet phu de                    
+        subtitle_data = get_subtitle_urls(info_dict)
+        # xet phu de truyen thong
+        if subtitle_data["automatic_captions"] != {}:
+            if subtitle_data["automatic_captions"]["en"]:
+                dangPdEn = subtitle_data["automatic_captions"]["en"]["ext"]
+                urlPdEn = subtitle_data["automatic_captions"]["en"]["url"]
+                ttLayPdEn = [dangPdEn, urlPdEn]
+                f = requests.get(ttLayPdEn[1])
+                if dangPdEn == "ttml":
+                    ttml_content = f.text
+                    subtitles = parse_ttml_with_seconds(ttml_content)
+                    print("Co subtitles")
+            else:
+                print("No en subtitles!")           
+        else:
+            subtitles = []
+            print("No subtitles!")
 
-def Lay_id_tde_tluong(url_yt):
-    try:
-        videoID = extract.video_id(url_yt)
-        tieude = YouTube(url_yt).title
-        tluong = YouTube(url_yt).length
-        return videoID,tieude,tluong
-    except:
-        tbaodong3.write(':red[Url Yt khong hop le!]')
-        time.sleep(1)
-        tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
-        return None,None,None
+        if len(subtitles)>0:
+            #tepjson = videoID + ".json"
+            #output_file = os.path.join(save_dir, f"{tepjson}")
+            #with open(output_file, 'w', encoding='utf-8') as f:
+            #    json.dump(subtitles, f, ensure_ascii=False, indent=2)
 
-def doi_hhmmss_000_giay(hhmmss_000):
-    #vd: hhmmss_000 = "12:01:1.01"
-    # Tao list va dao nguoc list
-    listh = (hhmmss_000.split(":"))[::-1]
-    mtotal=0
-    sonhan=1
-    for i, pt in enumerate(listh):
-        if i==0:
-            sonhan=1
-        elif i==1:
-            sonhan=60
-        elif i==2:
-            sonhan=3600        
-        mtotal=mtotal+float(pt)*sonhan
-    # Dinh dang mtotal la string voi 3 cs thap pjhan
-    mtotal="%.3f" %mtotal
-    #print(mtotal)
-    # 43261.01
-    return mtotal
+            #print(f"✅ Đã lưu vào: {output_file}")
+            return videoID,tieude,subtitles
 
-@st.cache_data
-def Lay_transcript_en(url_yt):
-    try:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            filepath = os.path.join(tmpdirname, "subyt")
-        # lenh cmd: yt-dlp hay tai ve file subyt.en.tml va ghi de le cu neu co tu url da cho
-        lenhcmd = 'yt-dlp -o '+filepath+'.%(ext)s --skip-download --write-auto-subs --sub-format ttml --yes-overwrites '+url_yt
-        l_lenhcmd=lenhcmd.split(' ')
-        run(l_lenhcmd)
-        with open(filepath+'.en.ttml', 'r') as fsub:
-            textall = fsub.read()
-        #chuyen doi textall trong tep ttml sang list dict
-        vtpdau=textall.find("<p")
-        textlay=textall[vtpdau:]
-        vtdivc=textlay.find("</div>")
-        textlay=textlay[:vtdivc]
-        l_textlay=textlay.split("\n")
-        l_textlays=[]
-        for pt in l_textlay:
-            if pt.strip() !='':
-                l_textlays.append(pt.strip())
-        #print(l_textlays, len(l_textlays))
-        transcript_en = []
-        for j,dong in enumerate(l_textlays):
-            tim=dong.split(">")[0]
-            startt=tim.split(" ")[1]
-            endt=tim.split(" ")[2]
-            starts=startt.split('="')[1][:-2]
-            ends=endt.split('="')[1][:-2]
-            #print(len(starts),len(ends))
-            startcc=doi_hhmmss_000_giay(starts)    
-            endcc=doi_hhmmss_000_giay(ends)
-            #print(startcc,endcc)
-            text=dong.split(">")[1].split("<")[0]
-            dictpt={}
-            dictpt['start']=startcc
-            dictpt['end']=endcc
-            dictpt['text']=text
-            transcript_en.append(dictpt)
-        return transcript_en
-    except:
-        print('Da xay ra loi o Lay_transcript_en!')
-        transcript_en=[]
-        return transcript_en
-#-------------------------------------------------------------
-#@st.cache_data
-def Lap_html_video(transcript_en, videoID,langSourceText):
-    chp = ''
-    for pt_dict in transcript_en:
-        start = pt_dict['start']
-        end = pt_dict['end']
-        text = pt_dict['text']
-        chp1 = '<div class="f-grid">\n'
-        chp2 = '<div class="youtube-marker-l" data-start='+'"'+start+'"' + ' data-end='+'"'+end+'"'+'>'+text+'</div>\n'
-        chp3 = '<div class="youtube-marker-r" data-start='+'"'+start+'"' + ' data-end='+'"'+end+'"'+'></div>\n'
-        chp4 = '</div>\n' 
-        chp = chp + chp1 + chp2 + chp3 +chp4
-    # in chp de copy dan vao html     
-    #print(chp)    
-    sty='''
-        body{
-            background:lightgray;
-            /*background-color: darkgray;*/}
-        .video-wrapper {
+#=== MAIN =====================================================
+st.set_page_config(page_title="YouTube TTS", layout="centered")
+st.subheader("YouTube với Phụ đề nói")
+
+# Nhập URL YouTube
+url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+# https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+video_id=""
+title=""
+subtitles=[]
+
+if url:
+    with st.spinner("Đang tải phụ đề json..."):
+        try:
+          video_id,title,subtitles = lay_Id_Title_Sub(url)
+          if video_id=="" or title=="" or len(subtitles)==0 :
+            st.write(":red[Sorry! Không thể lấy Phụ đề!]")
+            sys.exit()
+
+             
+          # Load phụ đề từ subtitles.json
+          #with open("1ivMkhtGq4o.json", "r", encoding="utf-8") as f:
+          #    subtitles = json.load(f)
+
+          #subtitles_js = json.dumps(subtitles, ensure_ascii=False)
+          subtitles_js = subtitles
+          listVideoId = [video_id+"|"+title]
+
+          # HTML + JS nhúng vào Streamlit
+          html_code = f"""
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <!-- Import SweetAlert2 -->
+              <title>Preparing to settle in the US</title>
+
+          <style>
+          body{{
+            height:100%;
+            background-image: linear-gradient(30deg, #1666b0, #fbfafb); 
+            color: #fff;
+            font: 1rem/1 'Poppins', sans-serif;
+            max-width: 800px;
+            flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom);
+            background-size: cover;
+            background-position: center;
+            display: block;
+            margin-left: auto;
+            margin-right: auto; /* hoặc margin: 0 auto; */
+            margin-bottom: 100%;
+          }}
+          .video-container {{
             position: relative;
+            width: 100%;
+            min-width: 100%;      /* ép không co lại */
             padding-bottom: 56.25%;
             height: 0;
-            overflow: hidden;}
-        .video-wrapper iframe {
+            overflow: hidden;
+            background: #000;
+          }}
+          iframe {{ 
             position: absolute;
-            top:0;
+            top: 0;
             left: 0;
             width: 100%;
-            height: 100%;}
-        .f-grid {
+            height: 100%;
+            display: block;       /* tránh Safari thêm khoảng trắng */
+          }}
+          .menu-group {{
+            margin-top: 4px;  
             display: flex;
             justify-content: space-between;
-            margin-left:0rem;
-            flex-flow: row wrap;
-            margin-bottom: -1.5rem;}
-        .youtube-marker-l{
-            flex: 3 0;
-            margin-left: 0.5rem;
-            margin-bottom: 0rem;
-            font-size: 0pt;
-            padding: 1rem;}
-        .youtube-marker-r{
-            flex: 3 0;
-            margin-left: 0.5rem;
-            margin-bottom: 0rem;
-            font-size: 0pt;
-            padding: 1rem;
-            color:darkblue;}
-        .youtube-marker-r:hover {
-            cursor: pointer;}
-        .youtube-marker-r-current {
-            color: brown;}
-        .center {
-            font-size: 13pt;
-            display: flex;
-            justify-content: center;
-            align-items: center;}
-
-        h2 {
-            font-size:20pt;
+            padding: 0 0 ; 
+            width: 100%;
+            box-sizing: border-box;
+          }}
+          .butp1,.butp2{{
+            font-size: 1.4rem;
+          }}
+          #voiceSelect{{
+            color:darkgreen;
+            width: 30%; 
+            display: block;
+            margin-left: 0;
+            font-size: 1.4rem;
+          }}
+          #videoSelect {{
+            color:rgb(2, 78, 2);
+            width: 75%; 
+            display: block;
+            margin-left: auto;
+            margin-right: auto; /* hoặc margin: 0 auto; */
+            font-size: 1.1rem;
+            color:gray;
             text-align: center;
-            color:green;}
+          }}
+          #rateRead{{
+            font-size: 1.4rem;
+          }}
+          #voiceSelect,#rateRead,.butp1,.butp2,#playBtn{{
+            width: 19%;
+            font-size: 0.9rem;
+          }}
+          #currentSubtitle{{
+            text-align: right;
+            font-size: 1.4rem;
+            color: darkgreen;
+          }}
+          #subdich{{
+            text-align: left;
+            color: darkblue;
+            font-size: 1.6rem;
+            height:4rem;
+            margin-left:10px;
+            font-style: italic;
+          }}
+          #playBtn{{
+            background-color: transparent;
+            color:darkblue;
+            font-weight:bolder;
+            font-size: 1.2rem;
+          }}
+          #currentSubtitle{{
+            height:3rem;
+            margin-right: 10px;
+          }}
+          #loa_button{{
+            margin-left:10px;
+            margin-bottom:4px;
+          }}
+          </style>
+          </head>
+          <body>
+              <div class="video-container">
+                  <div id="playerContainer"></div>
+              </div>
+              
+              <div class="menu-group">
+                  <select id="voiceSelect" ></select>
+                  <button id='rateRead' onclick="tocDoDoc()">Rate: 1</button>
 
-        #elm_url_yt{
-            font-size: 0pt;}
-        #elm_lang_source{
-            font-size: 0pt;}
-        .rateread {
-            font-size: 13pt;
-            display: flex;
-            justify-content: center;
-            align-items: center;}
-        #trudi{
-            color:red;
-            height: 30px;
-            width: 30px;
-            border-radius: 50%;
-            border: none;} 
-        #congthem {
-            color:red;
-            height: 30px;
-            width: 30px;
-            border-radius: 50%;
-            border: none;}
-        #vnoi {
-            color:blue;
-            height: 40px;
-            width: 40px;
-            border: 4;}
-        #read_sub {
-            color:green;}    
-        #btn {
-            color:green;}
-        #volume {
-            height: 40px;
-            width: 40px;
-            text-align: center;
-            border-radius: 50%;
-            border: none;} 
-        '''
-    js1='''
-        //bien global
-        var strBuffer = {};
-        var btn_elm = document.getElementById('btn');
-        var k_sub = 0;
-        var lang_source_text = document.getElementById('elm_lang_source').innerHTML;
-        var lang_dich_ra;
-        var voice_speak_dich;
-        var rate =  Number(document.getElementById('vnoi').innerHTML).toFixed(1);   
-        var Read_Sub_Crack = 1;
-        var volume_value = 1;
-        const readSubEl = document.getElementById('read_sub');
-        
-        //tao menu select_target_dialect lang dich ra tu dong dich 
-        let l_target_language = ['Danish', 'English', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Mexico', 'Nederlands', 'Rusian', 'Taiwan', 'Thai', 'Vietnamese']; 
-        let l_target_voices = ['da-DK', 'en-US', 'fr-FR', 'de-DE', 'it-IT', 'ja-JP', 'ko-KR', 'es-MX', 'nl-NL', 'ru-RU', 'zh-TW', 'th-TH', 'vi-VN']; 
-        let l_target_voices_tg = []; 
+                  <button id="playBtn">START ▶️</button>
 
-        //---------------------------------
-        function populateVoiceList() {
-            if (typeof speechSynthesis === "undefined") {
-                return;
-            }
-            const voices = speechSynthesis.getVoices();
-            for (let i = 0; i < voices.length; i++) {
-                //neu voices[i].lang co trong l_target_voices va voices[i].lang chua co trong l_target_voices_tg thi lay 
-                //l_target_language[l_target_voices.indexOf(voices[i].lang] dua vao  select_target_language
-                if ( l_target_voices.indexOf(voices[i].lang) >= 0 ){
-                    select_target_language.options.add(new Option(l_target_language[l_target_voices.indexOf(voices[i].lang)]+' ('+voices[i].lang+') - '+voices[i].name));
-                    //cai nay de kiem tra voices[i].lang dem vao chi 1 lan
-                    l_target_voices_tg.push(voices[i].lang);
-                    
-                    //chon default
-                    //if (voices[i].lang.includes('vi-VN') && (voices[i].name.includes('Linh') || voices[i].name.includes('An')) ){
-                    if (voices[i].lang.includes('vi-VN') ){
-                        //hai bien global lay gia tri ghi vao memory
-                        lang_dich_ra = voices[i].lang.slice(0, 2) ;
-                        voice_speak_dich = voices[i].lang;
-             
-                        //chi dinh default trong menu se hien ra
-                        let indexChon = l_target_voices_tg.indexOf(voices[i].lang);
-                        select_target_language.selectedIndex = indexChon;
-                        t_translate(lang_source=lang_source_text, lang_dich_ra=lang_dich_ra);
-                        //return;
-                    }
-                }
-            }
-        }
-        //---------------------
-        populateVoiceList();
-        if (typeof speechSynthesis !== "undefined" && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-        //-----------------------------------------------
-        function active_target_lang() {
-            //let selectedValue = select_target_language.options[select_target_language.selectedIndex].text;
-            let index_chon = select_target_language.selectedIndex;
-            //let text_brow = select_target_language.value;
-            let lang_rut = l_target_voices_tg[index_chon];
-            //alert(lang_rut);
-            if (typeof speechSynthesis === "undefined") {
-                return;
-            }
-            const voices = speechSynthesis.getVoices();
-            for (let i = 0; i < voices.length; i++) {
-                if (voices[i].lang.includes(lang_rut)){
-                    lang_dich_ra = lang_rut.slice(0, 2);
-                    voice_speak_dich =  voices[i].lang;
-                    t_translate(lang_source=lang_source_text, lang_dich_ra=lang_dich_ra);
-                    return;
-                }  
-            }
-        }
-        //---Dich ra ----------------------------------------- 
-        function t_translate(lang_source, lang_dich_ra) { 
-            const sourceLanguage = lang_source;
-            const targetLanguage = lang_dich_ra;
-            var els = document.getElementsByClassName("youtube-marker-l"); // Creates an HTMLObjectList not an array.
-            var elsd = document.getElementsByClassName("youtube-marker-r")
+                  <button class='butp1' onclick="btnReadSub()">Read sub only</button>
+                  <button class='butp2' onclick="btnYoutubeSound()">Sound yt only</button>
+              </div>
+              <hr>
+              <div class='outiframe'>
+                  <br>
+                  <div id="currentSubtitle">[source subtitles]</div>
+                  <div id="loa_button">🔊</div>
+                  <div id="subdich">[translated subtitles ]</div>
+                  <br>
+                  <hr><hr>
+                  <select id="videoSelect" ></select>
+              </div>
 
-            Array.prototype.forEach.call(els, function(el,i) {
-                let inputText = el.innerText;
-                let outputTextEle = elsd[i];
+            <!-- YouTube API -->
+            <script src="https://www.youtube.com/iframe_api"></script>
 
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLanguage}&tl=${targetLanguage}&dt=t&q=${encodeURI(inputText)}`;
+          <script>
+          let subtitles = '';   
+          var rateVread = 1;
+          var utterance_volume=1;
+          // ==========================
+              // 0. TAO MENU VDEO_ID
+              // ==========================
 
-                const xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200){
-                        const responseReturned = JSON.parse(this.responseText);
-                        const translations = responseReturned[0].map((text) => text[0]);
-                        const outputText = translations.join(" ");
-                        outputTextEle.textContent = outputText;
-                    }
-                };
-                //---------------------
-                xhttp.open("GET", url);
-                xhttp.send();
-            });
-        }
-        //======== Cua youtube API ====================================
-        let videoIDcurrent = document.getElementById("elm_url_yt").innerText;
-        //---------------------------------
-        let player;
-        let timeStart = 0;
-        let timeStartl = -1;
+              let listIdTd = {listVideoId};
 
-        //-----------------------------------
-        function onYouTubeIframeAPIReady() {
+              //tao list videos chua cac thong tin id, subtitle, title
+              const videos = listIdTd.map(item => {{
+              const [id, title] = item.split("|");
+              return {{
+                  id: id,
+                  title: title.trim()
+              }};
+              }});
 
-            //3a-Instantiate the Player, phai co player=... de iframeWindow hoat dong
-            player = new YT.Player("player", {
-                //da co iframe quy dinh roi
-                height: "300",
-                width: "480",
-                videoId: videoIDcurrent
-            });
-            //3b- This is the source "window" that will emit the events.
-            var iframeWindow = player.getIframe().contentWindow;
+              //tao menu chon video (select_id)
+              videos.forEach((v, index) => {{
+              const option = document.createElement("option");
+              option.value = v.id;
+              option.textContent = v.title;
+              videoSelect.appendChild(option);
+              }});
 
-            //3c- So we can compare against new updates.
-            var lastTimeUpdate = 0;
-            //3d- Listen to events triggered by postMessage ,this is how different windows in a browser (such as a popup or iFrame) can communicate. // See: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
-            window.addEventListener("message", function(event) {
-                // Check that the event was sent from the YouTube IFrame.
-                if (event.source === iframeWindow) {
-                    var data = JSON.parse(event.data);
-                    // The "infoDelivery" event is used by YT to transmit any kind of information change in the player, such as the current time or a playback quality change.
-                    //===SPEAK SUB HERE=======================================================
-                    if (data.event === "infoDelivery" && data.info && data.info.currentTime) {
-                        //console.log(data.info.currentTime);
-                        //time co dang 212.544 giay
-                        //var time = Math.round(data.info.currentTime * 1000) / 1000;
-                        var time = Math.round(data.info.currentTime);//lam tron sec
+              // ==========================
+              // 1. LOAD VOICES
+              // ==========================
+              const voiceSelect = document.getElementById("voiceSelect");
+              let voices = [];
 
-                        const [strBuffer, strBuffer2] = lay_strBuffer();
-                        //dang cua strBuffer la {1.224:'Toi', 2.16:'Anh', 3.111: 'No'}
+              function loadVoices() {{
+                voices = speechSynthesis.getVoices();
+                if (!voices.length) return;
 
-                        timeStart = time;
-                        let text = strBuffer[timeStart];
-                        let ellay = strBuffer2[timeStart];
+                voiceSelect.innerHTML = "";
+                voices.forEach(v => {{
+                  const opt = document.createElement("option");
+                  opt.value = v.name;
+                  opt.textContent = `${{v.lang}} ${{v.name}}`;
+                  voiceSelect.appendChild(opt);
+                }});
+              }}
 
-                        //Neu timeStart khac voi timeStartl luu va text khac trong  
-                        if (timeStart !== timeStartl && text){
-                            //console.log(timeStart, ellay);
-                            timeStartl = time; 
-                            subtitle.innerText = text;
-                            ellay.classList.add("youtube-marker-r-current");
-                            //phat am----------------------------------------
-                            Read_Sub(text);
-                        }//--------------------------------------------------
+              speechSynthesis.onvoiceschanged = loadVoices;
+              loadVoices();
 
-                        //Cu sau moi sec thi hien thi thoi gian
-                        // currentTime is emitted very frequently (milliseconds), but we only care about whole second changes.
-                        //var time = Math.floor(data.info.currentTime);
-                        //var time = data.info.currentTime;
-                        if (time !== lastTimeUpdate) {
-                            lastTimeUpdate = time;
-                            // It's now up to you to format the time. tinh ra phan tram thoi gian da chay youtub
-                            //document.getElementById("time").innerHTML = '(' + Math.round(100*time/player.getDuration()) +' %) &nbsp;';
-                        }  
-                    }
-                }
-            });
-        }
-                            //marker.dom.classList.add("youtube-marker-r-current");
+          //ham khoi phuc 
+          function restoreSelections() {{
+            const savedVideo = localStorage.getItem("selectedVideoId");
+            const savedVoice = localStorage.getItem("selectedVoiceName");
+            // Khôi phục video
+            if (savedVideo) {{
+              videoSelect.value = savedVideo;
+            }}
+            // Khôi phục voice
+            if (savedVoice) {{
+              const check = voices.find(v => v.name === savedVoice);
+              if (check) voiceSelect.value = savedVoice;
+            }}
+          }}
 
-        //---------Lay strBuffer phu de moi sec--------------------------
-        function lay_strBuffer(){
-            let strBuffer = {},
-                strBuffer2 = {};
-            var elsd = document.getElementsByClassName("youtube-marker-r");
-            Array.prototype.forEach.call(elsd, function(el,i) {
-                let start = Math.round(el.attributes[1].value);
-                let text = el.innerHTML;
-                strBuffer[start] = text;
-                strBuffer2[start] = el;
+          //moi khi voice thay doi thi khoi phuc da luu
+          speechSynthesis.onvoiceschanged = () => {{
+            loadVoices();
+            restoreSelections();   // 🔥 khôi phục voice + video
+          }};
 
-            });
-            return [strBuffer, strBuffer2];
-        }
-        //------------------------------------------------------
-        function cong1(){
-            rate =  Number(document.getElementById('vnoi').innerHTML).toFixed(1);
-            if (rate >= 0.0 && rate < 3.0) {
-                document.getElementById('vnoi').innerHTML = (Number(document.getElementById('vnoi').innerHTML) + Number("0.1")).toFixed(1);
-            }
-        }
-        //----------------    
-        function tru1(){
-            rate =  Number(document.getElementById('vnoi').innerHTML).toFixed(1);
-            if (rate <= 3 && rate > 0) {
-                document.getElementById('vnoi').innerHTML = (Number(document.getElementById('vnoi').innerHTML) - Number("0.1")).toFixed(1);
-            }
-        }
-        //------Moi lan click thi hien thi hoac an di subtitles-------
-        btn_elm.onclick = function(){
-        
-            k_sub = k_sub + 1;
-            if (k_sub % 2 === 1){
-                document.getElementById("btn").style.color="brown";
+              // ==========================
+              // 2. YOUTUBE PLAYER
+              // ==========================
+              let player = null;
 
-                var el = document.querySelectorAll(".youtube-marker-l");
-                for ( var i = 0; i < el.length; i ++ ) {
-                    el[i].style.fontSize = "14pt";
-                }
-                var el = document.querySelectorAll(".youtube-marker-r");
-                for ( var i = 0; i < el.length; i ++ ) {
-                    el[i].style.fontSize = "14pt";
-                }
+              function onYouTubeIframeAPIReady() {{
+                player = new YT.Player("playerContainer", {{
+                  height: "315",
+                  width: "560",
+                  videoId: document.getElementById("videoSelect").value,
+                  playerVars: {{ autoplay: 0, controls: 1 }},
+                  events: {{
+                    onReady: () => {{}},
+                    onStateChange: (e) => {{
+                      if (e.data === YT.PlayerState.PAUSED) stopReading();
+                      if (e.data === YT.PlayerState.PLAYING) resumeSync();
+                      if (e.data === YT.PlayerState.ENDED) stopReading();
+                    }}
+                  }}
+                }});
+              }}
+              window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
-            }else{
-                document.getElementById("btn").style.color="green";
+              // ==========================
+              // 3. FETCH JSON SUBTITLES
+              // ==========================
 
-                var el = document.querySelectorAll(".youtube-marker-l");
-                for ( var i = 0; i < el.length; i ++ ) {
-                    el[i].style.fontSize = "0pt";
-                }
-                var el = document.querySelectorAll(".youtube-marker-r");
-                for ( var i = 0; i < el.length; i ++ ) {
-                    el[i].style.fontSize = "0pt";
-                }
+              // ==========================
+              // 4. TTS + SYNC SUBTITLES
+              // ==========================
+              //let subtitles = [];
+              let interval = null;
+              let currentIndex = -1;
+              const subDiv = document.getElementById("currentSubtitle");
 
-            }
-        }       
-        //-----------------------
-        function Read_Sub_Volume(){
-            Read_Sub_Crack = Read_Sub_Crack + 1;
-            if (Read_Sub_Crack % 2 === 0){
-                volume_value = 0;
-                document.getElementById("volume").style.color="red";
-                document.getElementById("read_sub").style.color="red";
-            }else{
-                volume_value = 1;
-                document.getElementById("volume").style.color="green";
-                document.getElementById("read_sub").style.color="green";
+              function speak(textd) {{
+                speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(textd);
+                utter.rate = rateVread;
+                const selected = voiceSelect.value;
+                const voice = voices.find(v => v.name === selected);
+                if (voice) utter.voice = voice;
+                loa_button.onclick = () => {{
+                  utter.volume = utterance_volume;
+                  speechSynthesis.speak(utter);
+                }}
+                loa_button.click(); // tự động phát luôn
+            }}
 
-            }
-        }
-        //--------------------------
-        function Read_Sub(text){
-        
-            rate = Number(document.getElementById('vnoi').innerHTML).toFixed(1);
-            var msg     = new SpeechSynthesisUtterance();
-            msg.volume = volume_value;
-            msg.rate = rate; 
-            msg.lang = voice_speak_dich;
-            msg.text = text;
-            speechSynthesis.speak(msg);
-        
-        }
-        //--------------------------------------------------------------
-        '''
-    components.html(f"""
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Video Translate Speak Subtitle</title>
+              function stopReading() {{
+                speechSynthesis.cancel();
+                clearInterval(interval);
+                interval = null;
+                currentIndex = -1;
+              }}
 
-                    <style>{sty}</style>
-                    </head>
-                    <body>
-                    <div class="video-wrapper">
-                        <div id="player"></div>
-                    </div>
-                    <span id="elm_url_yt">{videoID}</span><span id="elm_lang_source">{langSourceText}</span>
+              function resumeSync() {{
+                stopReading();
+                startSync();
+              }}
 
-                    <hr>
-                    <div class="center">
-                        Voice &nbsp; <select id="select_target_language" onchange ="active_target_lang()"></select>&emsp;
-                        <button id="volume" onclick="Read_Sub_Volume()">Vol</button>
-                    </div><br>
+              function startSync() {{
+                interval = setInterval(() => {{
+                  if (!player || !subtitles.length) return;
 
-                    <div class="rateread">
-                        <button id="read_sub" onclick="Read_Sub()">Speak</button>&emsp; &emsp; 
-                        <button id="trudi" onclick="tru1()">-</button>&emsp; &emsp; 
-                        <button id="vnoi">1.2</button>&emsp; &emsp; 
-                        <button id="congthem" onclick="cong1()">+</button>&emsp;&emsp;
-                        <button id="btn">Sub</button>
-                    </div>
+                  const t = player.getCurrentTime();
+                  let idx = subtitles.findIndex(s => t >= s.start && t < s.end);
 
-                    <hr>
-                    <h2 id="subtitle"></h2>
+                  if (idx !== currentIndex) {{
+                    currentIndex = idx;
+
+                    if (idx === -1) {{
+                      subDiv.textContent = "";
+                    }} else {{
+                      document.getElementById("currentSubtitle").textContent = subtitles[idx].text;
+                      document.getElementById("subdich").textContent = subtitles[idx].textdich;
+                      speak(subtitles[idx].textdich);
+                    }}
+                  }}
+                }}, 200);
+              }}
+
+              // ==========================
+              // 5. PLAY BUTTON
+              // ==========================
+          document.getElementById("playBtn").addEventListener("click", async () => {{
+            const videoId = document.getElementById("videoSelect").value;
+
+            //subtitles = await fetchSubtitles(videoId);
+            subtitles = {subtitles_js};
+
+            // 🔥 DỊCH TOÀN BỘ JSON
+            translateFullJson(subtitles);
+
+            player.loadVideoById(videoId);
+            player.playVideo();
+
+            startSync();
+          }});
 
 
-                    {chp}
+              // ==========================
+              // 6. AUTO PLAY WHEN CHANGE VIDEO
+              // ==========================
+          document.getElementById("videoSelect").addEventListener("change", async () => {{
+              localStorage.setItem("selectedVideoId", videoSelect.value);
+              const videoId = videoSelect.value;
 
-                    <script>{js1}</script>
+              subtitles = {subtitles_js};
 
-                    <!-- Phai co dong sau thi moi speak duoc-->
-                    <script src="https://www.youtube.com/iframe_api"></script>
+              // 🔥 DỊCH TOÀN BỘ JSON
+              translateFullJson(subtitles);
 
-                </body>
-                </html>
-                """,height=900,scrolling=True)
+              player.loadVideoById(videoId);
+              player.playVideo();
 
-@st.cache_data
-def get_subtu_fastwhisper(url_yt):
-    try:
-        # Moi khi ham nay chay thi tao ra mot thu muc tam voi ten nau nhien moi, xong viec thi xoa
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            filepath = os.path.join(tmpdirname, "audioyt")
-        #lenhcmd = 'yt-dlp -x --extract-audio -o '+filepath+'.%(ext)s --yes-overwrites '+URL_YT
-        # Specify audio format and audio quality of extracted audio (between 0 (best) and 10 (worst), default = 5):
-        lenhcmd = 'yt-dlp --extract-audio --audio-format wav --audio-quality 0 -o '+filepath+'.%(ext)s --yes-overwrites '+url_yt
-        l_lenhcmd=lenhcmd.split(' ')
-        run(l_lenhcmd)
+              startSync();
 
-        model = WhisperModel("base", device="cpu", compute_type="int8") #
-        segments, info = model.transcribe(filepath+'.wav')
-        langnhanra = info.language
-        listdongs=[]
-        for segment in segments:
-            dongtext="[%.3fs -> %.3fs] %s" % (segment.start, segment.end, segment.text)
-            listdongs.append(dongtext)
-            #print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-        # Dua [[0.000s -> 9.000s]  Now, the VOA,...]  ve dang json: [{'start':'001.234', 'end':'005.567','text':'tien'},...]
-        list_dict_dong=[]
-        for dong in listdongs:
-            #dong co dang: [0.000s -> 9.000s]  Now, the VOA.
-            dictdong={}
-            dong_time=dong.strip().split("]")[0][1:] #dang: 0.000s -> 9.000s
-            dictdong['start']=dong_time.split(" -> ")[0][:-2]
-            dictdong['end']=dong_time.split(" -> ")[1][:-2]
-            dictdong['text']=dong.strip().split("]")[1].strip()
-            list_dict_dong.append(dictdong)
-        return list_dict_dong,langnhanra
-    except:
-        print('Da Loi o try fast whisper')
-        list_dict_dong=[]
-        langnhanra=''
-        return list_dict_dong,langnhanra
+            }});
 
-#==Bat Dau Main============================================================================
-tbaodong1 = st.empty()
-tbaodong1.write("<h2 style='text-align: center; color: green;'>VIDEO FOR LISTENING SUBTITLES</h2>", unsafe_allow_html=True)
-link_vidu="https://youtu.be/DpxxTryJ2fY?si=oMvtK4Nqt-y6Een9"
-tbaodong2 = st.markdown("<h6 style='text-align: center; color: lightblue;'>"+link_vidu+"</h6>", unsafe_allow_html=True)
+          //moi lan thay doi voice thi dich lai
+          document.getElementById("voiceSelect").addEventListener("change", async () => {{
+              //
+              localStorage.setItem("selectedVoiceName", voiceSelect.value);
+              translateFullJson(subtitles);
+              startSync();
+          }});
 
 
-url_yt=input_box(min_lines=1,max_lines=3,just_once=True)
-tbaodong3 = st.empty()
-tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
 
-if url_yt:
-    videoID,tieude,tluong = Lay_id_tde_tluong(url_yt)
-    if videoID:
-        tbaodong3.write(':blue[Lấy phụ đề từ yt_dlp...]')
-        transcript_en = Lay_transcript_en(url_yt)
-        if transcript_en:
-            Lap_html_video(transcript_en, videoID, langSourceText="en")
-            tbaodong3.write("<h4 style='text-align: center; color:orange;'>"+tieude+"</h4>", unsafe_allow_html=True)
-            st.write('---')
-            st.write('Video này dài  ' + str(int(tluong/60)+1) + ' phút. (Có thể bị cắt khi quá 120 phút!)')
-            st.balloons()
-        else:   # khong co transcript_en tai Yt thi phai lay ai api whjax, cung chua co f audio
-            tbaodong3.write(':red[Không có phụ đề từ yt_dlp!]')
-            time.sleep(1)
-            tbaodong3.write(':green[Xin đợi phiên âm từ Fast-Whisper do không có phụ đề trên yt...]')
-            transcript_language,langnhanra = get_subtu_fastwhisper(url_yt)
-            #print(transcript_language,langnhanra)
-            if transcript_language:
-                Lap_html_video(transcript_language, videoID, langSourceText=langnhanra)
-                tbaodong3.write("<h4 style='text-align: center; color:orange;'>"+tieude+"</h4>", unsafe_allow_html=True)
-                st.write('---')
-                st.write('Video này dài  ' + str(int(tluong/60)+1) + ' phút. (Có thể bị cắt khi quá 120 phút!)')
-                st.balloons()
-            else:
-                tbaodong3.write(':blue[Nhập vào khung trên URL của video youtube muốn xem. Ví dụ như url ở trên]')
+
+          //---dich
+          function translateFullJson(){{
+              const selected = voiceSelect.value;
+              const v = voices.find(x => x.name === selected);
+
+              let sourceLanguage = 'en';
+              let targetLanguage = v.lang.split("-")[0];
+              //console.log(sourceLanguage, targetLanguage);
+              //tao texts la list chua cac text cua subtitles
+              let texts = subtitles.map(item => item.text);
+              let textdichs = subtitles.map(item => item.textdich);
+
+              //console.log(texts);
+              
+              Array.prototype.forEach.call(texts, function(cau,i) {{
+                  let inputText = cau;
+                  let outputTextEle = textdichs[i];
+
+                  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${{sourceLanguage}}&tl=${{targetLanguage}}&dt=t&q=${{encodeURI(inputText)}}`;
+
+                  const xhttp = new XMLHttpRequest();  
+                  xhttp.onreadystatechange = function () {{
+                      if (this.readyState == 4 && this.status == 200){{
+                          const responseReturned = JSON.parse(this.responseText);
+                          const translations = responseReturned[0].map((text) => text[0]);
+                          const outputText = translations.join(" ");
+                          //outputTextEle.textdich = outputText;
+                          subtitles[i].textdich = outputText;
+                          console.log(subtitles[i].textdich);
+                      }}
+                  }};
+                  //---------------------
+                  xhttp.open("GET", url);
+                  xhttp.send();
+              }});
+          }}
+          const rateRead = document.getElementById('rateRead');
+          function tocDoDoc(){{
+            let rateReadValue = Number(rateRead.textContent.split(':')[1]);
+            rateReadValue = (1+rateReadValue)%10;//1,2,3,4,5,0
+            if (rateReadValue==0) rateReadValue=1;
+            rateRead.textContent = 'Rate: '+ rateReadValue;
+            rateVread = 1+rateReadValue/10;//1, 1.5, 2, 2.5, 3, 3.5
+          }}
+
+          function btnReadSub() {{
+            // Tắt tiếng YouTube
+            if (player && player.mute) {{
+              player.mute();
+            }}
+            // Bật âm lượng đọc phụ đề
+            utterance_volume = 1;
+          }}
+
+          function btnYoutubeSound(){{
+            // Bật tiếng YouTube
+            if (player && player.unMute) {{
+              player.unMute();
+              player.setVolume(100);
+            }}
+            // Tắt âm lượng đọc phụ đề
+            utterance_volume = 0;
+          }}
+
+
+          //moi khi chay lai trang thi khoi phuc  voice + video
+          restoreSelections();   // 🔥 khôi phục voice + video
+
+          </script>
+
+
+          </body>
+          </html>
+          """
+
+          # Hiển thị trong Streamlit
+          st.components.v1.html(html_code, height=800, scrolling=False)
+        except Exception:
+          st.write(":red[Sorry!! Không thể lấy Phụ đề!!]")
