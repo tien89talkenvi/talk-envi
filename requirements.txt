@@ -1,9 +1,6 @@
-streamlit==1.38.0
-pytube==15.0.0
-streamlit-input-box==0.0.3
-yt-dlp==2024.8.6
-subprocess.run==0.0.8
-faster-whisper==1.0.3
+streamlit==1.52.
+yt-dlp==2025.12.8
 textwrap3==0.9.2
+
 
 
