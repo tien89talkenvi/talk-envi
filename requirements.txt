@@ -4,4 +4,6 @@ streamlit-input-box==0.0.3
 yt-dlp==2024.8.6
 subprocess.run==0.0.8
 faster-whisper==1.0.3
+textwrap3==0.9.2
+
 
