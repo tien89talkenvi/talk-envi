@@ -105,8 +105,8 @@ def lay_Id_Title_Sub(url):
 
 #=== MAIN =====================================================
 st.set_page_config(page_title="YouTube TTS", layout="centered")
-st.subheader("YouTube với Phụ đề nói")
-
+st.markdown("<h4 style='text-align: center;color:green;'>YouTube với Phụ đề nói</h4>", unsafe_allow_html=True)
+/
 # Nhập URL YouTube
 url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 # https://www.youtube.com/watch?v=dQw4w9WgXcQ
@@ -547,3 +547,4 @@ if url:
           st.components.v1.html(html_code, height=800, scrolling=False)
         except Exception:
           st.write(":red[Sorry!! Không thể lấy Phụ đề!!]")
+
