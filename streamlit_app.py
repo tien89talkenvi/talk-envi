@@ -1,4 +1,4 @@
-
+# 
 import streamlit as st
 import textwrap
 import yt_dlp
@@ -107,10 +107,10 @@ def lay_Id_Title_Sub(url):
 st.set_page_config(page_title="YouTube TTS",  layout="centered",)
 st.markdown("""
 <style>
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
+#MainMenu {visibility: visible;}
+header {visibility: visible;}
 .block-container {
-padding-top: 0.5rem;
+padding-top: 2rem;
 }
 </style>
 """, unsafe_allow_html=True)
