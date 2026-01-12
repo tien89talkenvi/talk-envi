@@ -1,8 +1,10 @@
-#
+# 
 import streamlit as st
 import textwrap
 import yt_dlp
 import requests
+import re
+
 #--------------
 import json
 #import streamlit.components.v1 as components 
@@ -104,6 +106,70 @@ def lay_Id_Title_Sub(url):
             #print(f"✅ Đã lưu vào: {output_file}")
             return videoID,tieude,subtitles
 
+#--merge cap---
+def merge_by_sentence(subtitles, max_gap=1.5, max_length=150):
+  """
+  Gộp các phụ đề ngắn thành câu dài hơn để đọc tự nhiên hơn.
+  
+  Args:
+      subtitles: List các phụ đề gốc
+      max_gap: Khoảng cách tối đa giữa 2 phụ đề để gộp (giây)
+      max_length: Độ dài tối đa của câu đã gộp (ký tự)
+  
+  Returns:
+      List phụ đề đã được gộp
+  """
+  if not subtitles:
+      return []
+  
+  merged = []
+  current = {
+      'start': subtitles[0]['start'],
+      'end': subtitles[0]['end'],
+      'text': subtitles[0]['text'],
+      'textdich': ""
+  }
+  
+  for i in range(1, len(subtitles)):
+      sub = subtitles[i]
+      gap = sub['start'] - current['end']
+      
+      # Kiểm tra xem có nên gộp không
+      should_merge = False
+      
+      # Điều kiện 1: Khoảng cách giữa 2 phụ đề nhỏ
+      if gap <= max_gap:
+          # Điều kiện 2: Câu hiện tại chưa kết thúc (không có dấu câu kết thúc)
+          current_text_stripped = current['text'].rstrip()
+          if not current_text_stripped.endswith(('.', '!', '?', '。', '！', '？')):
+              should_merge = True
+          # Hoặc câu tiếp theo bắt đầu bằng chữ thường (tiếp nối)
+          elif sub['text'] and sub['text'][0].islower():
+              should_merge = True
+      
+      # Điều kiện 3: Không gộp nếu câu quá dài
+      if should_merge and len(current['text']) + len(sub['text']) > max_length:
+          should_merge = False
+      
+      if should_merge:
+          # Gộp phụ đề vào câu hiện tại
+          current['text'] = current['text'].rstrip() + ' ' + sub['text']
+          current['end'] = sub['end']
+      else:
+          # Lưu câu hiện tại và bắt đầu câu mới
+          merged.append(current)
+          current = {
+              'start': sub['start'],
+              'end': sub['end'],
+              'text': sub['text'],
+              'textdich': ""
+          }
+  
+  # Thêm câu cuối cùng
+  merged.append(current)
+  
+  return merged
+
 #=== MAIN =====================================================
 st.set_page_config(page_title="YouTube TTS",  layout="centered",)
 st.markdown("""
@@ -125,8 +191,10 @@ placeholder1.markdown(
 )
 
 with st.sidebar:
-    st.header('🏷️ :red[Nhập URL Youtube]')
+    st.header('🏷️ :blue[Youtube với Phụ đề "nói"]')
     st.write("---")
+    st.subheader('✅ :red[Nhập URL Youtube]')
+    
     url = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 
 
@@ -168,6 +236,9 @@ if butt and url :
       #    subtitles = json.load(f)
 
       #subtitles_js = json.dumps(subtitles, ensure_ascii=False)
+      subtitles = merge_by_sentence(subtitles)
+      #st.write(subtitles)
+
       subtitles_js = subtitles
       listVideoId = [video_id+"|"+title]
 
