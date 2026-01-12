@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 import time
 from urllib.parse import urlparse, parse_qs
 
+
 #----------------------- cac def ---------------------
 def get_subtitle_urls(info_dict):
     def extract_urls(subs_dict):
@@ -115,6 +116,7 @@ padding-top: 2rem;
 </style>
 """, unsafe_allow_html=True)
 
+
 placeholder1=st.empty()
 
 placeholder1.markdown(
@@ -182,7 +184,7 @@ if butt and url :
       <style>
       body{{
         height:100%;
-        background-image: linear-gradient(30deg, #1666b0, #fbfafb); 
+        background-image: linear-gradient(45deg, rgb(219, 209, 208), #fbfafb); 
         color: #fff;
         font: 1rem/1 'Poppins', sans-serif;
         max-width: 800px;
