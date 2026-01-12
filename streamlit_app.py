@@ -191,14 +191,14 @@ placeholder1.markdown(
 )
 
 with st.sidebar:
-    st.header('🏷️ :blue[Youtube với Phụ đề "nói"]')
-    st.write("---")
-    st.subheader('✅ :red[Nhập URL Youtube]')
+  st.title('🏷️ :blue[Youtube với Phụ đề "nói"]')
+  st.write("---")
+  st.subheader('✅ :red[Nhập URL Youtube]')
     
-    url = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+  url = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 
 
-    butt = st.button('OK')
+  butt = st.button('OK')
 
 
 # Nhập URL YouTube
@@ -322,14 +322,15 @@ if butt and url :
       }}
       #currentSubtitle{{
         text-align: right;
-        font-size: 1.4rem;
+        font-size: 1.1rem;
+        height:8rem;
         color: darkgreen;
       }}
       #subdich{{
         text-align: left;
         color: darkblue;
-        font-size: 1.6rem;
-        height:4rem;
+        font-size: 1.3rem;
+        height:8rem;
         margin-left:10px;
         font-style: italic;
       }}
