@@ -1,4 +1,4 @@
-# 
+#
 import streamlit as st
 import textwrap
 import yt_dlp
@@ -125,7 +125,7 @@ placeholder1.markdown(
 )
 
 with st.sidebar:
-    st.header('🏷️:red[Nhập URL YT]')
+    st.header('🏷️ :red[Nhập URL Youtube]')
     st.write("---")
     url = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 
@@ -184,7 +184,7 @@ if butt and url :
       <style>
       body{{
         height:100%;
-        background-image: linear-gradient(45deg, rgb(219, 209, 208), #fbfafb); 
+        background-image: linear-gradient(45deg, rgb(236, 236, 236), rgb(255,255,255)); 
         color: #fff;
         font: 1rem/1 'Poppins', sans-serif;
         max-width: 800px;
