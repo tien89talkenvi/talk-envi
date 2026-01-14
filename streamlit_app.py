@@ -182,22 +182,22 @@ tieuDeTrangChinh.markdown(
 aboutApp = st.empty()
 
 with aboutApp.container():
-    st.markdown(":red[ABOUT:]")
-    st.write(":blue[App này được viết để xem các video youtube có phụ đề tiếng Anh. Phụ đề này có thể được dịch ra ngôn ngữ khác và]" + ":red[ NÓI phụ đề theo giọng của trình đọc trong máy đồng bộ với tiếng nói trong video.]") 
+    st.markdown("🎯 :red[ABOUT:]")
+    st.write(":blue[App này được viết để xem các video youtube có phụ đề tiếng Anh. Phụ đề này có thể được dịch ra ngôn ngữ khác và]" + ":red[ NÓI phụ đề theo giọng của trình đọc trong máy đồng bộ với tiếng nói trong video.👍]") 
     st.write(":green[Nó giúp cho những người chưa rành tiếng Anh có thể xem youtube thuần tiếng Anh hiểu được nội dung theo tiếng dịch ra và được máy đọc lên.]") 
     st.write(":blue[Nó cũng giúp cho việc tự học tiếng Anh qua việc chỉ xem yt gốc tiếng Anh, hoặc chỉ nghe tiếng đã dịch theo các nút chọn. Hiện nay có rất nhiều yt dạy tiếng Anh để ta sử dụng cho việc tự học này.]") 
-    st.write(":red[CÁCH SỬ DỤNG:]") 
-    st.write(":green[1-> Vào sidebar bên trái để nhập một URL của video youtube.]") 
+    st.write("🔎 :red[CÁCH SỬ DỤNG:]") 
+    st.write(":green[1 >> Vào sidebar bên trái để nhập một URL của video youtube.]") 
     st.write(":green[URL này có nhiều cách lấy. Thông dụng nhất là vào trang youtube, chọn một video để mở nó lên rồi Crt-C url đó đem dán vào khung nhập url của app này.]") 
-    st.write(":blue[2-> Sau đó làm theo lời nhắc trên sidebar cho đến khi thành công thì khung video yt sễ hiển thị ở trang chính.]") 
-    st.write(":green[3-> Chọn tiếng sẽ dịch và giọng đọc tại nút đâu tiên bên trái. (có thể chọn lại trong quá trình xem)]") 
-    st.write(":blue[4-> Nhấp vào nút START để bắt đầu play video.]") 
-    st.write(":green[5-> Nếu cần điều chỉnh tốc độ giọng đọc băn dịch thì nhấp nút RATE cho đến khi phù hợp.]") 
-    st.write(":blue[6-> Nút 4: Chỉ nghe giọng đọc bản dịch, tắt âm thanh video.]") 
-    st.write(":green[7-> Nút 5: Chỉ nghe âm thanh video, tắt giọng đọc bản dịch.]") 
-    st.write(":blue[8-> Nút 6: Chỉ nghe âm thanh video, tắt giọng đọc bản dịch.]") 
-    st.write(":red[9-> Nếu muốn xem video yt khác thì xóa url cũ và nhập url khác.]") 
-
+    st.write(":blue[2 >> Sau đó làm theo lời nhắc trên sidebar cho đến khi thành công thì khung video yt sễ hiển thị ở trang chính.]") 
+    st.write(":green[3 >> Chọn tiếng sẽ dịch và giọng đọc tại nút đâu tiên bên trái. (có thể chọn lại trong quá trình xem)]") 
+    st.write(":blue[4 >> Nhấp vào nút START để bắt đầu play video.]") 
+    st.write(":green[5 >> Nếu cần điều chỉnh tốc độ giọng đọc băn dịch thì nhấp nút RATE cho đến khi phù hợp.]") 
+    st.write(":blue[6 >> Nút 4: Chỉ nghe giọng đọc bản dịch, tắt âm thanh video.]") 
+    st.write(":green[7 >> Nút 5: Chỉ nghe âm thanh video, tắt giọng đọc bản dịch.]") 
+    st.write(":blue[8 >> Nút 6: Chỉ nghe âm thanh video, tắt giọng đọc bản dịch.]") 
+    st.write(":red[9 >> Nếu muốn xem video yt khác thì xóa url cũ và nhập url khác.]") 
+    st.write("⁉️ :green[Hãy nhấp vào biểu tượng 🔊 khi đã bật nghe phụ đề mà không có tiếng.]") 
 # bien global
 video_id=""
 title=""
@@ -205,16 +205,39 @@ subtitles=[]
 thoiluong=0
 #############
 
+# Khởi tạo state
+if "url" not in st.session_state:
+    st.session_state.url = ""
+
+if "last_url" not in st.session_state:
+    st.session_state.last_url = ""
+
+def save_and_clear():
+    # Lưu lại giá trị trước khi xoá
+    st.session_state.last_url = st.session_state.url
+    # Xoá nội dung ô nhập
+    st.session_state.url = ""
+
+#st.text_input("Nhập URL:", key="url")
+
+#st.button("Lưu & Xoá", on_click=save_and_clear)
+
+#st.write("URL cuối cùng đã lưu:", st.session_state.last_url)
+
+
 with st.sidebar:
     st.title('🏷️ :blue[Youtube với Phụ đề "nói"]')
     st.write("---")
     st.subheader('✅ :red[Nhập URL Youtube rồi nhấp OK]')
   
-    URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+    URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
     
-    butUrl = st.button(':red[OK]')
+    butUrl = st.button('🆗', on_click=save_and_clear)
+
+    st.write("---")
     Tb_khi_ok_url = st.empty()
     if butUrl:
+        URL = st.session_state.last_url
         if URL:
             with st.spinner("Đang lấy Id từ Url đã nhập..."):
                 info = lay_info(URL)
@@ -227,9 +250,11 @@ with st.sidebar:
                     thoiluong = round(info['duration']/60,1)
                     #st.write(Thoiluong)
                     with Tb_khi_ok_url.container():
-                        st.write(':blue[Id : ]'+video_id) 
-                        st.write(':red[Title : ]'+title) 
-                        st.write(':green[Duration (minutes) : ]',thoiluong) 
+                        st.write('🔗: '+URL) 
+                        st.write('🆔: '+video_id) 
+                        st.write('🏷️: '+title) 
+                        st.write('🕒minutes: ',thoiluong) 
+                        st.write(':red[Đang lấy phụ đề...]') 
                     # xet phu de                    
                     subtitle_data = get_subtitle_urls(info)
                     # xet phu de truyen thong
@@ -244,12 +269,18 @@ with st.sidebar:
                                 #st.write(ttml_content)
                                 json_subs = ttml_to_json(ttml_content)
                                 subtitles = merge_by_sentence(json_subs)
-                                #st.write(json_subs)
+                                #st.write(json_subs)🏷️ Label Emoji | Meaning, Copy And Paste
+                                #bo >> trong subtitles
+                                pattern = ">>" 
+                                for item in subtitles:
+                                    item['text'] = re.sub(pattern, "", item['text'])
+
                                 with Tb_khi_ok_url.container():
-                                    st.write(':blue[Id : ] '+video_id) 
-                                    st.write(':red[Title : ] '+title) 
-                                    st.write(':green[Duration (minutes) : ] ',thoiluong) 
-                                    st.write(':blue[Đã thành công và đang hiển thị video:]') 
+                                    st.write('🔗: '+URL) 
+                                    st.write('🆔: '+video_id) 
+                                    st.write('🏷️: '+title) 
+                                    st.write('🕒minutes: ',thoiluong) 
+                                    st.write('✅:blue[Đã thành công và đang hiển thị video:]') 
                         else:
                             Tb_khi_ok_url.write("No en subtitles!")           
                     else:
@@ -343,15 +374,15 @@ if video_id and title and subtitles :
     }}
     #currentSubtitle{{
     text-align: right;
-    font-size: 1.1rem;
-    height:8rem;
+    font-size: 1.2rem;
+    height:9rem;
     color: darkgreen;
     }}
     #subdich{{
     text-align: left;
     color: darkblue;
-    font-size: 1.3rem;
-    height:8rem;
+    font-size: 1.4rem;
+    height:9rem;
     margin-left:10px;
     font-style: italic;
     }}
