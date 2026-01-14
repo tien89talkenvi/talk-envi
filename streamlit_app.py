@@ -375,7 +375,7 @@ if video_id and title and subtitles :
     #currentSubtitle{{
     text-align: right;
     font-size: 1.2rem;
-    height:4rem;
+    height:5rem;
     color: darkgreen;
     overflow-y: auto;
     }}
@@ -384,7 +384,7 @@ if video_id and title and subtitles :
     text-align: left;
     color: darkblue;
     font-size: 1.4rem;
-    height:5rem;
+    height:6rem;
     margin-left:10px;
     font-style: italic;
     overflow-y: auto;
