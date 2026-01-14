@@ -375,27 +375,28 @@ if video_id and title and subtitles :
     #currentSubtitle{{
     text-align: right;
     font-size: 1.2rem;
-    height:9rem;
+    height:4rem;
     color: darkgreen;
+    overflow-y: auto;
     }}
+    
     #subdich{{
     text-align: left;
     color: darkblue;
     font-size: 1.4rem;
-    height:9rem;
+    height:5rem;
     margin-left:10px;
     font-style: italic;
+    overflow-y: auto;
     }}
+
     #playBtn{{
     background-color: transparent;
     color:darkblue;
     font-weight:bolder;
     font-size: 1.2rem;
     }}
-    #currentSubtitle{{
-    height:3rem;
-    margin-right: 10px;
-    }}
+
     #loa_button{{
     margin-left:10px;
     margin-bottom:4px;
