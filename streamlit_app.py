@@ -10,8 +10,54 @@ import json
 import os
 import xml.etree.ElementTree as ET
 import time
+import base64
 
+def mahoa_tk():
+    cu='ghp_'
+    tkgia = "https://abc0|G2bA5Dh5TyPlG9j8fq5H3Q9TxTXVcN1ldP|Eh"
+    p1 = tkgia.split('|')[0]+tkgia.split('|')[1]+tkgia.split('|')[2]
+    #toidaytk = p1.replace(tkgia.split('|')[0],'ghp_')
+    return cu,p1,tkgia
+def send_to_gihub(subtitles):
+    cu,p1,tkgia=mahoa_tk()
+    # ==== CẤU HÌNH ====
+    token = p1.replace(tkgia.split('|')[0],cu)
+    st.write(token)
+    repo = "hoangco89/hoangco89.github.io"
+    remote_path = "Subs4/hhh.json"
+    message = "Tạo file hhh.json bằng Python"
 
+    headers = {
+    "Authorization": f"token {token}",
+    "Accept": "application/vnd.github.v3+json"
+    }
+
+    # ==== TẠO NỘI DUNG JSON NGAY TRONG PYTHON ====
+    
+    data_json = subtitles
+
+        
+
+    # Chuyển thành chuỗi JSON
+    content_str = json.dumps(data_json, indent=4)
+
+    # Encode base64 theo yêu cầu của GitHub API
+    content_b64 = base64.b64encode(content_str.encode()).decode()
+
+    # ==== GỬI LÊN GITHUB ====
+    url = f"https://api.github.com/repos/{repo}/contents/{remote_path}"
+
+    payload = {
+    "message": message,
+    "content": content_b64
+    }
+
+    response = requests.put(url, json=payload, headers=headers)
+
+    print(response.status_code)
+    print(response.json())
+
+#---------
 def lay_info(URL):
     info=None
     ydl_opts = {}
@@ -274,6 +320,9 @@ with st.sidebar:
                                 pattern = ">>" 
                                 for item in subtitles:
                                     item['text'] = re.sub(pattern, "", item['text'])
+
+                                send_to_gihub(subtitles)
+                                #========================
 
                                 with Tb_khi_ok_url.container():
                                     st.write('🔗: '+URL) 
@@ -728,7 +777,6 @@ if video_id and title and subtitles :
 
 # Nhập URL YouTube
 #url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
-
 
 
 
