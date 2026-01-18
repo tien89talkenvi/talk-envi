@@ -714,8 +714,7 @@ if video_id and title and subtitles :
     aboutApp.empty()
     st.components.v1.html(html_code, height=800, scrolling=False)
     
-    subtitles_list = list(subtitles.values())
-    st.write(subtitles_list)
+    st.write(subtitles_js)
     
 
 
@@ -729,6 +728,7 @@ if video_id and title and subtitles :
 
 # Nhập URL YouTube
 #url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+
 
 
 
