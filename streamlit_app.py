@@ -22,7 +22,6 @@ def send_to_gihub(subtitles,id_video):
     cu,p1,tkgia=mahoa_tk()
     # ==== CẤU HÌNH ====
     token = p1.replace(tkgia.split('|')[0],cu)
-    st.write(token)
     repo = "hoangco89/hoangco89.github.io"
     remote_path = f"Subs/{id_video}.json"
     message = F"Tạo file {id_video}.json bằng Python"
@@ -777,6 +776,7 @@ if video_id and title and subtitles :
 
 # Nhập URL YouTube
 #url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+
 
 
 
