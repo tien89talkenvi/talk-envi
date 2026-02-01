@@ -913,7 +913,7 @@ if url_yt :
         if len(subtitles)>0:
             kq = tsend_to_gihub(subtitles,id_video)
             print(id_video,lang,kq)
-            st.write(subtitles, lang, id_video)
+            #st.write(subtitles, lang, id_video)
             st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
             #if lang == 'vi':
             #    translator = GoogleTranslator(source='vi', target='en')
@@ -930,6 +930,7 @@ if url_yt :
     else:
         print('khong co subs',lang,id_video)
         st.write('Khong co phu de En/Vi nao !')
+
 
 
 
