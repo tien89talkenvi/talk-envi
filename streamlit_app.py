@@ -12,13 +12,7 @@ import os
 import xml.etree.ElementTree as ET
 import time
 import base64
-#--------------------------------
-# NHAN URL tu trinh duyet gui qua
-params = st.query_params
-link = params.get("link", "")
-URL_TU_TD_GUI = link
-st.write("Link nhan duoc tu Browse la: ", URL_TU_TD_GUI)
-#--------------------------------
+
 def tget_srt_subtitles(url, lang):
     ydl_opts = {
         "skip_download": True,
@@ -449,6 +443,50 @@ with st.sidebar:
                         Tb_khi_ok_url.write("No subtitles!")
         else:
             Tb_khi_ok_url.write(":red[Chưa nhập URL YT !]. Hãy nhập một Url Youtube.")
+    #--------------------------------
+    # NHAN URL tu trinh duyet gui qua
+    params = st.query_params
+    link = params.get("link", "")
+    URL_TU_TD_GUI = link
+    st.write("Link nhan duoc tu Browse la: ", URL_TU_TD_GUI)
+    #--------------------------------
+    ######################
+    url_yt = URL_TU_TD_GUI
+    ######################
+    
+    if url_yt :
+        srt_text = None
+        srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
+    
+        if not srt_text or 'Sorry...' in srt_text:
+            srt_text, lang, id_video = tget_srt_subtitles(url_yt, "en")
+            
+        print(srt_text, lang,id_video)
+    
+        subtitles = []
+        if srt_text != None:
+            subtitles, lang, id_video = srt_to_json(srt_text)
+            #print(subtitles, lang, id_video)
+            if len(subtitles)>0:
+                kq = tsend_to_gihub(subtitles,id_video)
+                print(id_video,lang,kq)
+                #st.write(subtitles, lang, id_video)
+                st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
+                #if lang == 'vi':
+                #    translator = GoogleTranslator(source='vi', target='en')
+                #    for i, item in enumerate(subtitles):
+                #        text = item.get('text', '')
+                #        if text:
+                #            try:
+                #                item['text'] = translator.translate(text)
+                #                print(f"{i+1}/{len(subtitles)}: {text} → {item['text']}")
+                #            except Exception as e:
+                #                print(f"❌ Lỗi tại dòng {i}: {e}")
+                #            #time.sleep(0.5)  # để tránh giới hạn
+                #    print(subtitles)
+        else:
+            print('khong co subs',lang,id_video)
+            st.write('Khong co phu de En/Vi nao !')
 
 
 #-----------Trang Chinh--------------------
@@ -893,43 +931,7 @@ if video_id and title and subtitles :
 
 #=========MAIN=====moi them 31-1-26==========
 
-######################
-url_yt = URL_TU_TD_GUI
-######################
 
-if url_yt :
-    srt_text = None
-    srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
-
-    if not srt_text or 'Sorry...' in srt_text:
-        srt_text, lang, id_video = tget_srt_subtitles(url_yt, "en")
-        
-    print(srt_text, lang,id_video)
-
-    subtitles = []
-    if srt_text != None:
-        subtitles, lang, id_video = srt_to_json(srt_text)
-        #print(subtitles, lang, id_video)
-        if len(subtitles)>0:
-            kq = tsend_to_gihub(subtitles,id_video)
-            print(id_video,lang,kq)
-            #st.write(subtitles, lang, id_video)
-            st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
-            #if lang == 'vi':
-            #    translator = GoogleTranslator(source='vi', target='en')
-            #    for i, item in enumerate(subtitles):
-            #        text = item.get('text', '')
-            #        if text:
-            #            try:
-            #                item['text'] = translator.translate(text)
-            #                print(f"{i+1}/{len(subtitles)}: {text} → {item['text']}")
-            #            except Exception as e:
-            #                print(f"❌ Lỗi tại dòng {i}: {e}")
-            #            #time.sleep(0.5)  # để tránh giới hạn
-            #    print(subtitles)
-    else:
-        print('khong co subs',lang,id_video)
-        st.write('Khong co phu de En/Vi nao !')
 
 
 
