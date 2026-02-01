@@ -2,6 +2,7 @@
 import streamlit as st
 import textwrap
 import yt_dlp
+from yt_dlp import YoutubeDL
 import requests
 import re
 import html
@@ -929,6 +930,7 @@ if url_yt :
     else:
         print('khong co subs',lang,id_video)
         st.write('Khong co phu de En/Vi nao !')
+
 
 
 
