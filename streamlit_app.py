@@ -11,6 +11,118 @@ import os
 import xml.etree.ElementTree as ET
 import time
 import base64
+#--------------------------------
+# NHAN URL tu trinh duyet gui qua
+params = st.query_params
+link = params.get("link", "")
+URL_TU_TD_GUI = link
+st.write("Link nhan duoc tu Browse la: ", URL_TU_TD_GUI)
+#--------------------------------
+def tget_srt_subtitles(url, lang):
+    ydl_opts = {
+        "skip_download": True,
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitlesformat": "srt",
+        "subtitleslangs": [lang],
+    }
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        id_video = info['id'] 
+
+    sub_url = None
+    # uploader subtitles
+    if "subtitles" in info and lang in info["subtitles"]:
+        for s in info["subtitles"][lang]:
+            if s.get("ext") == "srt":
+                sub_url = s["url"]
+                break
+    # auto captions
+    if not sub_url and "automatic_captions" in info and lang in info["automatic_captions"]:
+        for s in info["automatic_captions"][lang]:
+            if s.get("ext") == "srt":
+                sub_url = s["url"]
+                break
+
+    if not sub_url:
+        return None, lang, id_video
+
+    raw = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0"}).text
+
+    return raw, lang, id_video
+
+def tsrt_time_to_seconds(t):
+    h, m, s = t.split(':')
+    s, ms = s.split(',')
+    return int(h)*3600 + int(m)*60 + int(s) + int(ms)/1000
+
+def srt_to_json(srt_text):
+    pattern = r"(\d+)\s+(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\s+(.*?)\s*(?=\n\d+\n|\Z)"
+    matches = re.findall(pattern, srt_text, flags=re.DOTALL)
+
+    items = []
+    for idx, start, end, text in matches:
+        item={}
+        item["start"]=tsrt_time_to_seconds(start)
+        item["end"]=tsrt_time_to_seconds(end)
+        item["text"]=" ".join(text.split())
+        item["textdich"]=""
+        items.append(item)
+    #print(items)    
+    return items, lang, id_video
+
+def tmahoa_tk():
+    cu='ghp_'
+    tkgia = "https://abc0|G2bA5Dh5TyPlG9j8fq5H3Q9TxTXVcN1ldP|Eh"
+    p1 = tkgia.split('|')[0]+tkgia.split('|')[1]+tkgia.split('|')[2]
+    #toidaytk = p1.replace(tkgia.split('|')[0],'ghp_')
+    return cu,p1,tkgia
+
+def tsend_to_gihub(subtitles,id_video):
+    #neu chua co file thi gui, neu co roi thi cap nhat
+    cu,p1,tkgia=tmahoa_tk()
+    # ==== CẤU HÌNH ====
+    GITHUB_TOKEN = p1.replace(tkgia.split('|')[0],cu)
+    OWNER = "hoangco89"
+    REPO = "hoangco89.github.io"
+    FILE_PATH = f"Subs/{id_video}.json"    # đường dẫn trong repo
+    COMMIT_MESSAGE = "Create or update file via API"
+    new_content = json.dumps(subtitles, ensure_ascii=False, indent=2)
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+    url = f"https://api.github.com/repos/{OWNER}/{REPO}/contents/{FILE_PATH}"
+    # Encode nội dung mới
+    encoded = base64.b64encode(new_content.encode()).decode()
+    # 1. Kiểm tra file có tồn tại không
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        # File đã tồn tại → lấy sha để cập nhật
+        sha = response.json()["sha"]
+        payload = {
+            "message": COMMIT_MESSAGE,
+            "content": encoded,
+            "sha": sha
+        }
+        #print("🔄 File đã tồn tại → đang cập nhật...")
+    else:
+        # File chưa tồn tại → tạo mới
+        payload = {
+            "message": COMMIT_MESSAGE,
+            "content": encoded
+        }
+        #print("🆕 File chưa tồn tại → đang tạo mới...")
+
+    # 2. Gửi PUT để tạo hoặc cập nhật
+    update = requests.put(url, headers=headers, json=payload)
+    #print("Status:", update.status_code)
+    #st.write("Status:", update.status_code)
+    #Status: 200 la thanh cong cap nhat file da co
+    #Status: 201 la thanh cong gui file moi
+    #print(update.json())
+    return update.status_code
+
 
 def mahoa_tk():
     cu='ghp_'
@@ -776,6 +888,49 @@ if video_id and title and subtitles :
 
 # Nhập URL YouTube
 #url = st.text_input("Nhập URL YouTube:", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+
+
+#=========MAIN=====moi them 31-1-26==========
+
+######################
+url_yt = URL_TU_TD_GUI
+######################
+
+if url_yt :
+    srt_text = None
+    srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
+
+    if not srt_text or 'Sorry...' in srt_text:
+        srt_text, lang, id_video = tget_srt_subtitles(url_yt, "en")
+        
+    print(srt_text, lang,id_video)
+
+    subtitles = []
+    if srt_text != None:
+        subtitles, lang, id_video = srt_to_json(srt_text)
+        #print(subtitles, lang, id_video)
+        if len(subtitles)>0:
+            kq = tsend_to_gihub(subtitles,id_video)
+            print(id_video,lang,kq)
+            st.write(subtitles, lang, id_video)
+            st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
+            #if lang == 'vi':
+            #    translator = GoogleTranslator(source='vi', target='en')
+            #    for i, item in enumerate(subtitles):
+            #        text = item.get('text', '')
+            #        if text:
+            #            try:
+            #                item['text'] = translator.translate(text)
+            #                print(f"{i+1}/{len(subtitles)}: {text} → {item['text']}")
+            #            except Exception as e:
+            #                print(f"❌ Lỗi tại dòng {i}: {e}")
+            #            #time.sleep(0.5)  # để tránh giới hạn
+            #    print(subtitles)
+    else:
+        print('khong co subs',lang,id_video)
+        st.write('Khong co phu de En/Vi nao !')
+
+
 
 
 
