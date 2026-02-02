@@ -21,9 +21,13 @@ def tget_srt_subtitles(url, lang):
         "subtitlesformat": "srt",
         "subtitleslangs": [lang],
     }
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        id_video = info['id'] 
+    info=None
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            id_video = info['id'] 
+    except:
+        return info
 
     sub_url = None
     # uploader subtitles
@@ -420,6 +424,7 @@ with st.sidebar:
                                 ttml_content = f.text
                                 #st.write(ttml_content)
                                 json_subs = ttml_to_json(ttml_content)
+
                                 subtitles = merge_by_sentence(json_subs)
                                 #st.write(json_subs)🏷️ Label Emoji | Meaning, Copy And Paste
                                 #bo >> trong subtitles
@@ -455,6 +460,10 @@ with st.sidebar:
     ######################
     
     if url_yt :
+        if tget_srt_subtitles(url_yt, "vi") == None:
+            #cham dut chuong trinh
+            sys.exit("Có lỗi, dừng chương trình.")
+
         srt_text = None
         srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
     
@@ -468,10 +477,19 @@ with st.sidebar:
             subtitles, lang, id_video = srt_to_json(srt_text)
             #print(subtitles, lang, id_video)
             if len(subtitles)>0:
+                for item in subtitles:
+                    item['text'] = re.sub(">>", "", item['text'])
+                    item['text'] = re.sub(r"\[.*?\]", "", item['text'])
+                
                 kq = tsend_to_gihub(subtitles,id_video)
                 print(id_video,lang,kq)
                 #st.write(subtitles, lang, id_video)
                 st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
+   
+                video_id = id_video
+                title = "Video"
+                subtitles =subtitles
+
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
                 #    for i, item in enumerate(subtitles):
@@ -930,7 +948,6 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
-
 
 
 
