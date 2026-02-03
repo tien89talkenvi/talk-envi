@@ -70,7 +70,7 @@ def srt_to_json(srt_text):
         item["textdich"]=""
         items.append(item)
     #print(items)    
-    return items, lang, id_video
+    return items, lang, id_video, info
 
 def tmahoa_tk():
     cu='ghp_'
@@ -476,7 +476,7 @@ with st.sidebar:
     
         subtitles = []
         if srt_text != None:
-            subtitles, lang, id_video, tieude = srt_to_json(srt_text)
+            subtitles, lang, id_video, info = srt_to_json(srt_text)
             #print(subtitles, lang, id_video)
             if len(subtitles)>0:
                 for item in subtitles:
