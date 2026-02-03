@@ -46,11 +46,11 @@ def tget_srt_subtitles(url, lang):
                 break
 
     if not sub_url:
-        return None, lang, id_video, info['title']
+        return None, lang, id_video, info
 
     raw = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0"}).text
 
-    return raw, lang, id_video, info['title']
+    return raw, lang, id_video, info
 
 def tsrt_time_to_seconds(t):
     h, m, s = t.split(':')
