@@ -13,6 +13,8 @@ import xml.etree.ElementTree as ET
 import time
 import base64
 
+info=None
+
 def tget_srt_subtitles(url, lang):
     ydl_opts = {
         "skip_download": True,
@@ -25,7 +27,7 @@ def tget_srt_subtitles(url, lang):
     try:
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            id_video = info['id'] 
+            id_video = info['id']
     except:
         return info
 
@@ -44,11 +46,11 @@ def tget_srt_subtitles(url, lang):
                 break
 
     if not sub_url:
-        return None, lang, id_video
+        return None, lang, id_video, info['title']
 
     raw = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0"}).text
 
-    return raw, lang, id_video
+    return raw, lang, id_video, info['title']
 
 def tsrt_time_to_seconds(t):
     h, m, s = t.split(':')
@@ -427,10 +429,10 @@ with st.sidebar:
 
                                 subtitles = merge_by_sentence(json_subs)
                                 #st.write(json_subs)🏷️ Label Emoji | Meaning, Copy And Paste
-                                #bo >> trong subtitles
-                                pattern = ">>" 
+                                #bo >> va [.*?\] trong subtitles
                                 for item in subtitles:
-                                    item['text'] = re.sub(pattern, "", item['text'])
+                                    item['text'] = re.sub(">>", "", item['text'])
+                                    item['text'] = re.sub(r"\[.*?\]", "", item['text'])
 
                                 send_to_gihub(subtitles,video_id)
                                 #========================
@@ -474,7 +476,7 @@ with st.sidebar:
     
         subtitles = []
         if srt_text != None:
-            subtitles, lang, id_video = srt_to_json(srt_text)
+            subtitles, lang, id_video, tieude = srt_to_json(srt_text)
             #print(subtitles, lang, id_video)
             if len(subtitles)>0:
                 for item in subtitles:
@@ -485,10 +487,18 @@ with st.sidebar:
                 print(id_video,lang,kq)
                 #st.write(subtitles, lang, id_video)
                 st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
-   
                 video_id = id_video
-                title = "Video"
-                subtitles =subtitles
+                tieude = info['title']
+                thoiluong = round(info['duration']/60,1)
+                #subtitles =subtitles
+
+                with Tb_khi_ok_url.container():
+                    st.write('🔗: '+URL) 
+                    st.write('🆔: '+video_id) 
+                    st.write('🏷️: '+tieude) 
+                    st.write('🕒minutes: ',thoiluong) 
+                    st.write('✅:blue[Đã thành công và đang hiển thị video:]') 
+   
 
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
