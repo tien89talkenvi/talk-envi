@@ -467,10 +467,10 @@ with st.sidebar:
             sys.exit("Có lỗi, dừng chương trình.")
 
         srt_text = None
-        srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
+        srt_text, lang, id_video,info = tget_srt_subtitles(url_yt, "vi")
     
         if not srt_text or 'Sorry...' in srt_text:
-            srt_text, lang, id_video = tget_srt_subtitles(url_yt, "en")
+            srt_text, lang, id_video.info = tget_srt_subtitles(url_yt, "en")
             
         print(srt_text, lang,id_video)
     
