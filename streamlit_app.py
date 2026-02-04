@@ -591,6 +591,7 @@ if video_id and title and subtitles :
     }}
     #currentSubtitle{{
     text-align: right;
+    margin-right:10px;
     font-size: 1.2rem;
     height:6rem;
     color: darkgreen;
@@ -632,10 +633,10 @@ if video_id and title and subtitles :
             <select id="voiceSelect" ></select>
             <button id='rateRead' onclick="tocDoDoc()">Rate: 1</button>
 
-            <button id="playBtn">START ▶️</button>
+            <button id="playBtn">▶️</button>
 
-            <button class='butp1' onclick="btnReadSub()">Read sub only</button>
-            <button class='butp2' onclick="btnYoutubeSound()">Sound yt only</button>
+            <button class='butp1' onclick="btnReadSub()">Sub only</button>
+            <button class='butp2' onclick="btnYoutubeSound()">Yt only</button>
         </div>
         <hr>
         <div class='outiframe'>
@@ -930,8 +931,8 @@ if video_id and title and subtitles :
     tieuDeTrangChinh.empty()
     aboutApp.empty()
     st.components.v1.html(html_code, height=800, scrolling=False)
-    y=json.dumps(subtitles_js)
-    st.write(y)
+    #y=json.dumps(subtitles_js)
+    #st.write(y)
     
 
 
@@ -948,7 +949,6 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
-
 
 
 
