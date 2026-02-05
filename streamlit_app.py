@@ -488,6 +488,7 @@ with st.sidebar:
    
                 video_id = id_video
                 subtitles =subtitles
+                title = 'Video Youtube'
 
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
@@ -509,7 +510,6 @@ with st.sidebar:
 #-----------Trang Chinh--------------------
 if video_id and title and subtitles :
     subtitles_js = subtitles
-    title = 'Video Youtube'
     listVideoId = [video_id+"|"+title]
     # HTML + JS nhúng vào Streamlit
     html_code = f"""
