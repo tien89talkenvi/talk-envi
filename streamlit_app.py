@@ -487,15 +487,7 @@ with st.sidebar:
                 st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
    
                 video_id = id_video
-                title = info['title']
-                thoiluong = round(info['duration']/60,1)
                 subtitles =subtitles
-                with Tb_khi_ok_url.container():
-                    st.write('🔗: '+URL) 
-                    st.write('🆔: '+video_id) 
-                    st.write('🏷️: '+title) 
-                    st.write('🕒minutes: ',thoiluong) 
-                    st.write('✅:blue[Đã thành công và đang hiển thị video:]') 
 
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
@@ -517,6 +509,7 @@ with st.sidebar:
 #-----------Trang Chinh--------------------
 if video_id and title and subtitles :
     subtitles_js = subtitles
+    title = 'Video Youtube'
     listVideoId = [video_id+"|"+title]
     # HTML + JS nhúng vào Streamlit
     html_code = f"""
