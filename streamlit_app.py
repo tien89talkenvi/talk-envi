@@ -487,8 +487,15 @@ with st.sidebar:
                 st.write('Ket qua gui Subs len Github: ',id_video,lang,kq)
    
                 video_id = id_video
-                title = "Video"
+                title = info['title']
+                thoiluong = round(info['duration']/60,1)
                 subtitles =subtitles
+                with Tb_khi_ok_url.container():
+                    st.write('🔗: '+URL) 
+                    st.write('🆔: '+video_id) 
+                    st.write('🏷️: '+title) 
+                    st.write('🕒minutes: ',thoiluong) 
+                    st.write('✅:blue[Đã thành công và đang hiển thị video:]') 
 
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
@@ -579,16 +586,22 @@ if video_id and title and subtitles :
     margin-left: auto;
     margin-right: auto; /* hoặc margin: 0 auto; */
     font-size: 1.1rem;
-    color:gray;
+    color:rgb(218, 143, 5);
     text-align: center;
     }}
     #rateRead{{
     font-size: 1.4rem;
     }}
-    #voiceSelect,#rateRead,.butp1,.butp2,#playBtn{{
+    #voiceSelect, #rateRead,.butp1,.butp2,#playBtn{{
     width: 19%;
     font-size: 0.9rem;
+    background-color: transparent;
+    color:rgb(231, 225, 225);
+    border-color: #000;
+    border-bottom: 3px solid black;
+    color:orange;
     }}
+
     #currentSubtitle{{
     text-align: right;
     margin-right:10px;
