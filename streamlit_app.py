@@ -580,6 +580,7 @@ with st.sidebar:
             st.write(y2)
         else:
             st.write('No info!')
+        st.stop()    
 
 
 #-----------Trang Chinh--------------------
@@ -1030,6 +1031,7 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
+
 
 
 
