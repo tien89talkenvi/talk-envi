@@ -13,6 +13,55 @@ import xml.etree.ElementTree as ET
 import time
 import base64
 
+def xu_li_playlist_url(urlplaylist):
+    js_titleIdUrl_chude = []
+    ydl_opts = {
+        "quiet": True,
+        "extract_flat": True,   # tương đương --flat-playlist
+        "skip_download": True,
+    }
+    urlplaylist= urlplaylist.strip()
+    info=None
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(urlplaylist, download=False)
+    if info:     
+        item={}
+        item['title'] = str(i)+". "+info['title']     
+        item['id'] = info['id']    
+        item['webpage_url'] = info['webpage_url']     
+        js_titleIdUrl_chude.append(item)
+
+    st.write(js_titleIdUrl_chude)
+
+    if len(js_titleIdUrl_chude)>0:
+        #----tao tieu de cho video theo moi chu de
+        for item in js_titleIdUrl_chude:
+            id_cd = item['id']
+            title_cd = item['title']
+            st.write(f"Chu de: {title_cd}")
+            st.write(f"Video trong chu de {title_cd}:")
+            js_videoIdTitle_cde = []
+            ydl_opts = {
+                "quiet": True,
+                "extract_flat": True,   # tương đương --flat-playlist
+                "skip_download": True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(item['webpage_url'], download=False)
+                if 'entries' in info:
+                    for video in info['entries']:
+                        vid_item = {}
+                        vid_item['title'] = video['title']
+                        vid_item['id'] = video['id']
+                        js_videoIdTitle_cde.append(vid_item)
+            st.write(js_videoIdTitle_cde)
+            #if len(js_videoIdTitle_cde)>0:
+            #    output_file_vid = os.path.join(save_dir, f"{id_cd}.json")
+            #    with open(output_file_vid, 'w', encoding='utf-8') as f:
+            #        json.dump(js_videoIdTitle_cde, f, ensure_ascii=False, indent=2)
+            #    st.write(f"Da luu file video chu de: {output_file_vid}")
+
+
 def tget_srt_subtitles(url, lang):
     ydl_opts = {
         "skip_download": True,
@@ -955,6 +1004,7 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
+
 
 
 
