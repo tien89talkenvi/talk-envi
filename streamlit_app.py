@@ -13,33 +13,46 @@ import xml.etree.ElementTree as ET
 import time
 import base64
 
-def xu_li_playlist_url(urlplaylist):
-    js_titleIdUrl_chude = []
-    ydl_opts = {
-        "quiet": True,
-        "extract_flat": True,   # tương đương --flat-playlist
-        "skip_download": True,
-    }
-    urlplaylist= urlplaylist.strip()
-    info=None
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(urlplaylist, download=False)
-    if info:     
-        item={}
-        item['title'] = str(i)+". "+info['title']     
-        item['id'] = info['id']    
-        item['webpage_url'] = info['webpage_url']     
-        js_titleIdUrl_chude.append(item)
+def xuli_urlplaylist(lplays):
 
-    st.write(js_titleIdUrl_chude)
+    js_titleIdUrl_chude = []
+    for i, pt in enumerate(lplays):
+        #st.write('Index va url cua urlplaylist la: ', i, pt)
+        urlplaylist = pt.strip()
+        ydl_opts = {
+            "quiet": True,
+            "extract_flat": True,   # tương đương --flat-playlist
+            "skip_download": True,
+        }
+        urlplaylist= pt.strip()
+        info=None
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(urlplaylist, download=False)
+        if info:     
+            item={}
+            item['title'] = str(i)+". "+info['title']     
+            item['id'] = info['id']    
+            item['webpage_url'] = info['webpage_url']     
+            js_titleIdUrl_chude.append(item)
+
+    #st.write(js_titleIdUrl_chude)
 
     if len(js_titleIdUrl_chude)>0:
+        #save_dir = 'Hoangco89/Jschude2'
+        #output_file = os.path.join(save_dir, f"js_IdTitleUrl_chude.json")
+
+        #with open(output_file, 'w', encoding='utf-8') as f:
+        #    json.dump(js_titleIdUrl_chude, f, ensure_ascii=False, indent=2)
+
+        #st.write(f"Da luu file: {output_file}")
+        
         #----tao tieu de cho video theo moi chu de
+        js_videoIdTitle_cde=[]
         for item in js_titleIdUrl_chude:
             id_cd = item['id']
             title_cd = item['title']
-            st.write(f"Chu de: {title_cd}")
-            st.write(f"Video trong chu de {title_cd}:")
+            #st.write(f"Chu de: {title_cd}")
+            #st.write(f"Video trong chu de {title_cd}:")
             js_videoIdTitle_cde = []
             ydl_opts = {
                 "quiet": True,
@@ -54,13 +67,13 @@ def xu_li_playlist_url(urlplaylist):
                         vid_item['title'] = video['title']
                         vid_item['id'] = video['id']
                         js_videoIdTitle_cde.append(vid_item)
-            st.write(js_videoIdTitle_cde)
+            #st.write(js_videoIdTitle_cde)
             #if len(js_videoIdTitle_cde)>0:
-            #    output_file_vid = os.path.join(save_dir, f"{id_cd}.json")
-            #    with open(output_file_vid, 'w', encoding='utf-8') as f:
-            #        json.dump(js_videoIdTitle_cde, f, ensure_ascii=False, indent=2)
-            #    st.write(f"Da luu file video chu de: {output_file_vid}")
-
+                #output_file_vid = os.path.join(save_dir, f"{id_cd}.json")
+                #with open(output_file_vid, 'w', encoding='utf-8') as f:
+                #    json.dump(js_videoIdTitle_cde, f, ensure_ascii=False, indent=2)
+                #st.write(f"Da luu file video chu de: {output_file_vid}")
+    return js_titleIdUrl_chude, js_videoIdTitle_cde        
 
 def tget_srt_subtitles(url, lang):
     ydl_opts = {
@@ -508,7 +521,7 @@ with st.sidebar:
     url_yt = URL_TU_TD_GUI
     ######################
     
-    if url_yt :
+    if not 'playlist' in url_yt :
         if tget_srt_subtitles(url_yt, "vi") == None:
             #cham dut chuong trinh
             sys.exit("Có lỗi, dừng chương trình.")
@@ -554,6 +567,19 @@ with st.sidebar:
         else:
             print('khong co subs',lang,id_video)
             st.write('Khong co phu de En/Vi nao !')
+    else:
+        #----------------------------------------------------------------------------------------------------
+        js_titleIdUrl_chude, js_videoIdTitle_cde = xuli_urlplaylist([url_yt])
+        
+        if len(js_titleIdUrl_chude)>0 and len(js_videoIdTitle_cde)>0:
+            y1=json.dumps(js_titleIdUrl_chude)
+            st.write(':red[Json cua chu de : ]')
+            st.write(y1)
+            y2=json.dumps(js_videoIdTitle_cde)
+            st.write(':red[Json cac vido trong chu de la : ]')
+            st.write(y2)
+        else:
+            st.write('No info!')
 
 
 #-----------Trang Chinh--------------------
@@ -1004,6 +1030,7 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
+
 
 
 
