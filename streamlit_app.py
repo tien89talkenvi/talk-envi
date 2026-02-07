@@ -520,8 +520,21 @@ with st.sidebar:
     ######################
     url_yt = URL_TU_TD_GUI
     ######################
-    
-    if not 'playlist' in url_yt :
+    if 'playlist' in url_yt :
+        #----------------------------------------------------------------------------------------------------
+        js_titleIdUrl_chude, js_videoIdTitle_cde = xuli_urlplaylist([url_yt])
+        
+        if len(js_titleIdUrl_chude)>0 and len(js_videoIdTitle_cde)>0:
+            y1=json.dumps(js_titleIdUrl_chude)
+            st.write(':red[Json cua chu de : ]')
+            st.write(y1)
+            y2=json.dumps(js_videoIdTitle_cde)
+            st.write(':red[Json cac vido trong chu de la : ]')
+            st.write(y2)
+        else:
+            st.write('No info!')
+        
+    else:
         if tget_srt_subtitles(url_yt, "vi") == None:
             #cham dut chuong trinh
             sys.exit("Có lỗi, dừng chương trình.")
@@ -567,20 +580,6 @@ with st.sidebar:
         else:
             print('khong co subs',lang,id_video)
             st.write('Khong co phu de En/Vi nao !')
-    else:
-        #----------------------------------------------------------------------------------------------------
-        js_titleIdUrl_chude, js_videoIdTitle_cde = xuli_urlplaylist([url_yt])
-        
-        if len(js_titleIdUrl_chude)>0 and len(js_videoIdTitle_cde)>0:
-            y1=json.dumps(js_titleIdUrl_chude)
-            st.write(':red[Json cua chu de : ]')
-            st.write(y1)
-            y2=json.dumps(js_videoIdTitle_cde)
-            st.write(':red[Json cac vido trong chu de la : ]')
-            st.write(y2)
-        else:
-            st.write('No info!')
-        st.stop()    
 
 
 #-----------Trang Chinh--------------------
@@ -1031,6 +1030,7 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
+
 
 
 
