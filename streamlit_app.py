@@ -106,18 +106,18 @@ def tget_srt_subtitles(url, lang):
                 break
 
     if not sub_url:
-        return None, lang, id_video
+        return None, lang, id_video, info['title']
 
     raw = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0"}).text
 
-    return raw, lang, id_video
+    return raw, lang, id_video, info['title']
 
 def tsrt_time_to_seconds(t):
     h, m, s = t.split(':')
     s, ms = s.split(',')
     return int(h)*3600 + int(m)*60 + int(s) + int(ms)/1000
 
-def srt_to_json(srt_text):
+def srt_to_json(srt_text,title):
     pattern = r"(\d+)\s+(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\s+(.*?)\s*(?=\n\d+\n|\Z)"
     matches = re.findall(pattern, srt_text, flags=re.DOTALL)
 
@@ -130,7 +130,7 @@ def srt_to_json(srt_text):
         item["textdich"]=""
         items.append(item)
     #print(items)    
-    return items, lang, id_video
+    return items, lang, id_video, title
 
 def tmahoa_tk():
     cu='ghp_'
@@ -526,16 +526,16 @@ with st.sidebar:
             st.stop()
 
         srt_text = None
-        srt_text, lang, id_video = tget_srt_subtitles(url_yt, "vi")
+        srt_text, lang, id_video, title = tget_srt_subtitles(url_yt, "vi")
     
         if not srt_text or 'Sorry...' in srt_text:
-            srt_text, lang, id_video = tget_srt_subtitles(url_yt, "en")
+            srt_text, lang, id_video,title = tget_srt_subtitles(url_yt, "en")
             
         print(srt_text, lang,id_video)
     
         subtitles = []
         if srt_text != None:
-            subtitles, lang, id_video = srt_to_json(srt_text)
+            subtitles, lang, id_video, title = srt_to_json(srt_text,title)
             #print(subtitles, lang, id_video)
             if len(subtitles)>0:
                 for item in subtitles:
@@ -549,7 +549,8 @@ with st.sidebar:
    
                 video_id = id_video
                 subtitles =subtitles
-                title = 'Video Youtube'
+                title = title
+                listVideoId = f"{video_id}||{title}"
 
                 #if lang == 'vi':
                 #    translator = GoogleTranslator(source='vi', target='en')
@@ -571,7 +572,7 @@ with st.sidebar:
 #-----------Trang Chinh--------------------
 if video_id and title and subtitles :
     subtitles_js = subtitles
-    listVideoId = [video_id+"|"+title]
+    listVideoId = [video_id+"||"+title]
     # HTML + JS nhúng vào Streamlit
     html_code = f"""
     <!DOCTYPE html>
@@ -731,7 +732,7 @@ if video_id and title and subtitles :
 
         //tao list videos chua cac thong tin id, subtitle, title
         const videos = listIdTd.map(item => {{
-        const [id, title] = item.split("|");
+        const [id, title] = item.split("||");
         return {{
             id: id,
             title: title.trim()
@@ -1016,7 +1017,6 @@ if video_id and title and subtitles :
 
 
 #=========MAIN=====moi them 31-1-26==========
-
 
 
 
