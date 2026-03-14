@@ -1,4 +1,4 @@
-
+# 
 # 
 import streamlit as st
 import yt_dlp
@@ -26,7 +26,8 @@ def tget_info(url):
 
         return info 
     except:
-        return info 
+        st.write(':red[No info, stop here.]')
+        st.stop()
 # HAM 2 --------------------
 def json3_to_segments(data):
 
