@@ -1,6 +1,6 @@
+
 # 
 import streamlit as st
-import textwrap
 import yt_dlp
 from yt_dlp import YoutubeDL
 import requests
@@ -9,83 +9,50 @@ import html
 #--------------
 import json
 import os
-import xml.etree.ElementTree as ET
 import time
 import base64
-import uuid
 
-
-
-def tget_json3_subtitles(url, lang):
-    ydl_opts = {
-        "skip_download": True,
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitlesformat": "json3",
-        "subtitleslangs": [lang],
-    }
+# HAM 1 ----------
+def tget_info(url):
     info=None
     try:
+        ydl_opts = {
+            "quiet": True,
+            "skip_download": True
+        }
+        info=None
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            video_id = info['id']
-            video_title = info['title']
-            video_duration = info['duration']
+
+        return info 
     except:
-        return info
+        return info 
+# HAM 2 --------------------
+def json3_to_segments(data):
 
-    sub_url = None
-    # uploader subtitles
-    if "subtitles" in info and lang in info["subtitles"]:
-        for s in info["subtitles"][lang]:
-            if s.get("ext") == "json3":
-                sub_url = s["url"]
-                break
-    # auto captions
-    if not sub_url and "automatic_captions" in info and lang in info["automatic_captions"]:
-        for s in info["automatic_captions"][lang]:
-            if s.get("ext") == "json3":
-                sub_url = s["url"]
-                break
+    segments = []
 
-    if not sub_url:
-        return None, lang, video_id, video_title, video_duration 
+    for event in data["events"]:
 
-    raw = requests.get(sub_url, headers={"User-Agent": "Mozilla/5.0"}).text
-
-    return raw, lang, video_id, video_title, video_duration
-
-
-
-def json3_to_json(json3_text):
-    """
-    Convert YouTube JSON3 (srv3) subtitle text into
-    a simple list of {start, end, text}.
-    """
-    data = json.loads(json3_text)
-    output = []
-
-    for item in data.get("events", []):
-        if "segs" not in item:
+        if "segs" not in event:
             continue
 
-        start = item.get("tStartMs", 0) / 1000
-        end = start + item.get("dDurationMs", 0) / 1000
+        text = "".join(seg["utf8"] for seg in event["segs"])
 
-        # Join all segments into one text line
-        text = "".join(seg.get("utf8", "") for seg in item["segs"]).strip()
+        start = event["tStartMs"] / 1000
+        dur = event.get("dDurationMs", 0) / 1000
 
-        if text:
-            output.append({
-                "start": round(start, 3),
-                "end": round(end, 3),
-                "text": text,
-                "textdich": ""
-            })
+        segments.append({
+            "start": round(start,3),
+            "end": round(start + dur,3),
+            "text": text.strip(),
+            "textdich": ""
 
-    return output
+        })
 
+    return segments
 
+# HAM 3 ------------------------------- 
 def tsend_to_gihub(subtitles,id_video):
     def tmahoa_tk():
         cu='ghp_'
@@ -139,7 +106,7 @@ def tsend_to_gihub(subtitles,id_video):
     return update.status_code
 
 
-#--merge cap---
+#--merge cap---chua dung ham nay------------------------------
 def merge_by_sentence(subtitles, max_gap=1.5, max_length=150):
     """
     Gộp các phụ đề ngắn thành câu dài hơn để đọc tự nhiên hơn.
@@ -203,150 +170,8 @@ def merge_by_sentence(subtitles, max_gap=1.5, max_length=150):
     
     return merged
 
-
-#=== MAIN =====================================================
-st.set_page_config(page_title="YouTube TTS",  layout="centered",)
-st.markdown("""
-<style>
-#MainMenu {visibility: visible;}
-header {visibility: visible;}
-.block-container {
-padding-top: 2.2rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-tieuDeTrangChinh = st.empty()
-aboutApp = st.empty()
-
-tde = "YouTube với Phụ đề nói"
-tieuDeTrangChinh.markdown(
-    f"<h4 style='text-align: center;color:green;'>{tde}</h4>", 
-    unsafe_allow_html=True
-)
-aboutApp.markdown(
-    f"<img style='text-align: center;color:green;' src='https://i.ytimg.com/vi_webp/SyJlbqiZABQ/hq720.webp'></image>",
-    unsafe_allow_html=True
-)
-
-# bien global
-video_id=""
-video_title=""
-subtitles=[]
-video_duration=0
-#############
-#tranh Korean dep
-#https://img.youtube.com/vi/44fDDCkBdLE/maxresdefault.jpg
-
-
-
-
-with st.sidebar:
-    # Khởi tạo state
-    if "url" not in st.session_state:
-        st.session_state.url = ""
-
-    if "last_url" not in st.session_state:
-        st.session_state.last_url = ""
-
-    def save_and_clear():
-        # Lưu lại giá trị trước khi xoá
-        st.session_state.last_url = st.session_state.url
-        # Xoá nội dung ô nhập
-        st.session_state.url = ""
-
-    st.title('🏷️ :blue[Youtube với Phụ đề nói]')
-    st.write("---")
-    st.subheader('✅ :red[Nhập URL Youtube rồi nhấp OK]')
-  
-    URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
-    
-    butUrl = st.button('🆗', on_click=save_and_clear)
-
-    st.write("---")
-
-    if butUrl:
-        URL1 = st.session_state.last_url
-    else:    
-        URL1 = ""
-
-    #--------------------------------------------------------
-    # NHAN URL tu trinh duyet gui qua
-    params = st.query_params
-    link = params.get("link", "")
-    URL_TU_TD_GUI = link
-    
-    hthi_URL_TU_TD_GUI = st.empty()
-
-    with hthi_URL_TU_TD_GUI.container():
-        st.write("Link tu trinh duyet gui qua : ", URL_TU_TD_GUI)
-    #--------------------------------------------------------
-    
-    st.write("---")
-
-
-    if URL1 != "" and URL_TU_TD_GUI == "":
-        url_yt = URL1
-    elif URL_TU_TD_GUI != "" and URL1 == "":     
-        url_yt = URL_TU_TD_GUI
-    elif URL1 != ""  and URL_TU_TD_GUI != "" :     
-        url_yt = URL1
-    else:
-        url_yt="" # ghi dai ma thoi de ko loi
-
-    if 'https://' in url_yt:    
-
-        if tget_json3_subtitles(url_yt, "vi") == None:
-            #cham dut chuong trinh
-            st.write(':red[No info! Stop here!]')
-            st.stop() 
-
-        json3_text = None
-        json3_text, lang, video_id, video_title,video_duration = tget_json3_subtitles(url_yt, "vi")
-
-        if not json3_text or 'Sorry...' in json3_text:
-            json3_text, lang, video_id ,video_title,video_duration = tget_json3_subtitles(url_yt, "en")
-        
-        #st.write(json3_text, lang, id_video)
-
-        subtitles = []
-        if json3_text != None:
-        
-            subtitles = json3_to_json(json3_text)
-            #print(subtitles)
-            st.write('Ssubtitles OK.')
-
-            if len(subtitles)>0:
-                #Sua lai subtitles mot ti
-                for item in subtitles:
-                    item['text'] = re.sub(">>", "", item['text'])
-                    item['text'] = re.sub(r"\[.*?\]", "", item['text'])
-                
-                #Gui subtitles len github de save vao thu muc Subs tren do
-                kq = tsend_to_gihub(subtitles,video_id)
-                
-        
-                #st.write(subtitles, lang, id_video)
-                st.write('Ket qua gui Subs len Github: ',video_id,lang,kq)
-        
-                kq_tbao = st.empty()
-                with kq_tbao.container():
-                    st.write('Url : ', url_yt)
-                    st.write('Id : ', video_id)
-                    st.write('Title : ', video_title)
-                    st.write('Duration (minutes) : ', round(video_duration/60,2))
-            else:
-                with kq_tbao.container():
-                    st.write('No Info enough! ')
-
-
-
-
-
-
-#-----------Trang Chinh--------------------
-if video_id and video_title and subtitles :
+# HAM 4 -------------------------------------------- 
+def lap_html_code(video_id, video_title, subtitles):
     # HTML + JS nhúng vào Streamlit
     html_code = f"""
     <!DOCTYPE html>
@@ -509,7 +334,7 @@ if video_id and video_title and subtitles :
     </style>
     </head>
     <body>
-        <div class="video-container">
+        <div class="video-container"> 
             <div id="playerContainer"></div>
         </div>
         
@@ -803,11 +628,207 @@ if video_id and video_title and subtitles :
     </body>
     </html>
     """
-    # Hiển thị trong Streamlit
-    tieuDeTrangChinh.empty()
-    aboutApp.empty()
-    st.components.v1.html(html_code, height=900, scrolling=True)
-    #y=json.dumps(subtitles_js)
-    #st.write(y)
+    return html_code
 
-    #https://www.youtube.com/watch?v=Apn6KLPx1_Q
+#=== MAIN =====================================================
+st.set_page_config(page_title="YouTube TTS",  layout="centered",)
+st.markdown("""
+    <style>
+    #MainMenu {visibility: visible;}
+    header {visibility: visible;}
+    .block-container {
+    padding-top: 2.2rem;
+    }
+    </style>
+    """, 
+    unsafe_allow_html=True)
+
+
+tieuDeTrangChinh = st.empty()
+aboutApp = st.empty()
+
+tde = "YouTube với Phụ đề nói"
+tieuDeTrangChinh.markdown(
+    f"<h4 style='text-align: center;color:green;'>{tde}</h4>", 
+    unsafe_allow_html=True
+)
+aboutApp.markdown(
+    f"<img style='text-align: center;color:green;' src='https://i.ytimg.com/vi_webp/SyJlbqiZABQ/hq720.webp'></image>",
+    unsafe_allow_html=True
+)
+
+# bien global
+video_id=""
+video_title=""
+subtitles=[]
+video_duration=0
+#############
+#tranh Korean dep
+#https://img.youtube.com/vi/44fDDCkBdLE/maxresdefault.jpg
+
+
+
+
+with st.sidebar:
+    # Khởi tạo state
+    if "url" not in st.session_state:
+        st.session_state.url = ""
+
+    if "last_url" not in st.session_state:
+        st.session_state.last_url = ""
+
+    def save_and_clear():
+        # Lưu lại giá trị trước khi xoá
+        st.session_state.last_url = st.session_state.url
+        # Xoá nội dung ô nhập
+        st.session_state.url = ""
+
+    st.title('🏷️ :blue[Youtube với Phụ đề nói]')
+    st.write("---")
+    st.subheader('✅ :red[Nhập URL Youtube rồi nhấp OK]')
+  
+    URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+    
+    butUrl = st.button('🆗', on_click=save_and_clear)
+
+    st.write("---")
+
+    if butUrl:
+        URL1 = st.session_state.last_url
+    else:    
+        URL1 = ""
+
+    #--------------------------------------------------------
+    # NHAN URL tu trinh duyet gui qua
+    params = st.query_params
+    link = params.get("link", "")
+    URL_TU_TD_GUI = link
+    
+    hthi_URL_TU_TD_GUI = st.empty()
+
+    with hthi_URL_TU_TD_GUI.container():
+        st.write("Link tu trinh duyet gui qua : ", URL_TU_TD_GUI)
+    #--------------------------------------------------------
+    
+    st.write("---")
+
+
+    if URL1 != "" and URL_TU_TD_GUI == "":
+        url_yt = URL1
+    elif URL_TU_TD_GUI != "" and URL1 == "":     
+        url_yt = URL_TU_TD_GUI
+    elif URL1 != ""  and URL_TU_TD_GUI != "" :     
+        url_yt = URL1
+    else:
+        url_yt="" # ghi dai ma thoi de ko loi
+
+    if 'https://' in url_yt:
+    ########################        
+
+        # BUOC 1 : LAY info BANG HAM tget_info(url)
+        # ROI tu info tim va lay url cua json3 cua 
+        # subtitles/automatic_captions ung voi lang en/en_GB/vi
+        #------------------------------------------ 
+        info = tget_info(url_yt)
+
+        if info==None:
+            st.write(':red[No info, stop here.]')
+            st.stop()
+        else:
+            # luu cac tt can thiet
+            video_id = info['id']
+            video_title = info['title']
+            video_duration_m = round(info['duration']/60,0)
+
+            # lay subtitles uu tien neu khong co thi lay automatic_captions
+            sub = None
+            if 'subtitles' in info and info['subtitles'] != {}:
+                sub = info['subtitles']
+                #st.write('day la sub: ',sub)
+            elif 'automatic_captions' in info and info['automatic_captions'] != {}:
+                sub = info['automatic_captions']
+                #st.write('day la auto cap : ',sub)
+
+            if sub==None or sub == {}:
+                st.write("No sub available, Bc sub/auto")
+            else:
+                sublay = None
+                if 'vi' in sub:
+                    sublay = sub['vi']
+                    video_lang_source = 'vi'
+                elif 'vi-VN' in sub:   
+                    sublay = sub['vi-VN']
+                    video_lang_source = 'vi-VN'
+                elif 'en-GB' in sub:   
+                    sublay = sub['en-GB']
+                    video_lang_source = 'en-GB'
+                elif 'en-US' in sub:   
+                    sublay = sub['en-US']
+                    video_lang_source = 'en-US'
+                elif 'en' in sub:   
+                    sublay = sub['en']
+                    video_lang_source = 'en'
+
+                if sublay==None:     
+                    st.write("No sub vi/en-GB/en-US/en. Bc Lang")
+                else:
+                    #raise Exception("No sub vi/en-GB/en")
+                    # lay chi dinh dang json3 ma thoi
+                    url_json3=None
+                    for ptdic in sublay:
+                        if ptdic['ext'] == 'json3':
+                            url_json3 = ptdic['url']
+                            #st.write(url_json3)
+                            break
+                    if url_json3==None:
+                        st.write("No url_json3!")
+                    else:
+                        data=None
+                        try:
+                            response = requests.get(url_json3)
+                            #st.write(response.json())
+                            data = response.json()
+                        except:
+                            st.write("No data json! Bc json3")
+                            st.stop()
+                        
+                        # BUOC 2 : chuyen data json3 ra json don gian gan vao subtitles
+                        #--------------------------------------------------------------
+                        subtitles = json3_to_segments(data)
+                        #st.write(subtitles)
+                        # Cac thong tin day du :
+                        st.write('1. :blue[Url of yt video : ]', url_yt)
+                        st.write('2. :green[Id of yt video : ]', video_id)
+                        st.write('3. :blue[Title of yt video : ]', video_title)
+                        st.write('4. :green[Duration(m) of yt video : ]', video_duration_m)
+                        st.write('5. :blue[Source voice of yt video  : ]', video_lang_source)
+
+
+                        #Sua lai subtitles mot ti
+                        for item in subtitles:
+                            item['text'] = re.sub(">>", "", item['text'])
+                            item['text'] = re.sub(r"\[.*?\]", "", item['text'])
+                        
+                        
+                        # BUOC 3 : Gui subtitles len github de save vao thu muc Subs tren do
+                        #-------------------------------------------------------------------
+                        #Gui subtitles len github de save vao thu muc Subs tren do
+                        kq = tsend_to_gihub(subtitles,video_id)
+                        #st.write(subtitles, lang, id_video)
+                        st.write('6. :red[Ket qua gui Subs len Github: ]',video_id,kq)
+                
+
+                        # BUOC 4 : Lap HTML_CODE DE HIEN THI WEB
+                        #----------------------------------------------------------
+                        html_code = lap_html_code(video_id, video_title, subtitles)
+
+                        # Hiển thị html_code trong Streamlit
+                        tieuDeTrangChinh.empty()
+                        aboutApp.empty()
+                        with aboutApp.container():
+                            st.components.v1.html(html_code, height=900, scrolling=True )
+
+# streamlit run https://raw.githubusercontent.com/tien89talkenvi/talk-envi/main/streamlit_app.py
+# https://raw.githubusercontent.com/hoangco89/hoangco89.github.io/main/Jschude/js_titleIdUrl_chude.json
+# DA THU:
+# https://www.youtube.com/watch?v=j7aYcNVCq7Y #en
