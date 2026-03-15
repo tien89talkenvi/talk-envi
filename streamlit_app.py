@@ -751,85 +751,138 @@ with st.sidebar:
                 #st.write('day la auto cap : ',sub)
 
             if sub==None or sub == {}:
-                st.write("No sub available, Bc sub/auto")
-            else:
+                st.write("No subtitles and No automatic_captions!!")
+            else: # co sub
                 sublay = None
-                if 'vi' in sub:
-                    sublay = sub['vi']
-                    video_lang_source = 'vi'
-                elif 'vi-VN' in sub:   
-                    sublay = sub['vi-VN']
-                    video_lang_source = 'vi-VN'
-                elif 'en-GB' in sub:   
-                    sublay = sub['en-GB']
-                    video_lang_source = 'en-GB'
-                elif 'en-US' in sub:   
-                    sublay = sub['en-US']
-                    video_lang_source = 'en-US'
-                elif 'en' in sub:   
+                okjson3=False
+                if 'en' in sub and okjson3==False:
                     sublay = sub['en']
                     video_lang_source = 'en'
-
-                if sublay==None:     
-                    st.write("No sub vi/en-GB/en-US/en. Bc Lang")
-                else:
-                    #raise Exception("No sub vi/en-GB/en")
-                    # lay chi dinh dang json3 ma thoi
-                    url_json3=None
                     for ptdic in sublay:
                         if ptdic['ext'] == 'json3':
-                            url_json3 = ptdic['url']
-                            #st.write(url_json3)
+                            #st.write(video_lang_source, 'co json3')
+                            okjson3=True
                             break
-                    if url_json3==None:
-                        st.write("No url_json3!")
-                    else:
-                        data=None
-                        try:
-                            response = requests.get(url_json3)
-                            #st.write(response.json())
-                            data = response.json()
-                        except:
-                            st.write("No data json! Bc json3")
-                            st.stop()
-                        
-                        # BUOC 2 : chuyen data json3 ra json don gian gan vao subtitles
-                        #--------------------------------------------------------------
-                        subtitles = json3_to_segments(data)
-                        #st.write(subtitles)
-                        # Cac thong tin day du :
-                        st.write('1. :blue[Url of yt video : ]', url_yt)
-                        st.write('2. :green[Id of yt video : ]', video_id)
-                        st.write('3. :blue[Title of yt video : ]', video_title)
-                        st.write('4. :green[Duration(m) of yt video : ]', video_duration_m)
-                        st.write('5. :blue[Source voice of yt video  : ]', video_lang_source)
+
+                elif 'en-US' in sub and okjson3==False:   
+                    sublay = sub['en-US']
+                    video_lang_source = 'en-US'
+                    for ptdic in sublay:
+                        if ptdic['ext'] == 'json3':
+                            #st.write(video_lang_source, 'co json3')
+                            okjson3=True
+                            break
+                elif 'en-GB' in sub and okjson3==False:   
+                    sublay = sub['en-GB']
+                    video_lang_source = 'en-GB'
+                    for ptdic in sublay:
+                        if ptdic['ext'] == 'json3':
+                            #st.write(video_lang_source, 'co json3')
+                            okjson3=True
+                            break
+                elif 'vi' in sub and okjson3==False:   
+                    sublay = sub['vi']
+                    video_lang_source = 'vi'
+                    for ptdic in sublay:
+                        if ptdic['ext'] == 'json3':
+                            #st.write(video_lang_source, 'co json3')
+                            okjson3=True
+                            break
+                elif 'vi-VN' in sub and okjson3==False:   
+                    sublay = sub['vi-VN']
+                    video_lang_source = 'vi-VN'
+                    for ptdic in sublay:
+                        if ptdic['ext'] == 'json3':
+                            #st.write(video_lang_source, 'co json3')
+                            okjson3=True
+                            break
+                elif sublay==None and okjson3==False:     
+                    st.write("No sub vi/en-GB/en-US/en. Bc Lang")
+                    # continuos
+                    for j,khoa in enumerate(sub):
+                        if khoa in "zh zh-TW da da-DK nl nl-NL fr fr-FR de de-DE it it-IT ja ja-JP ko ko-KR":
+                            sublay = sub[khoa]
+                            video_lang_source = sub[j]
+                            for ptdic in sublay:
+                                if ptdic['ext'] == 'json3':
+                                    #st.write(video_lang_source, 'co json3')
+                                    okjson3=True
+                                    break
+                        break            
+
+                else:
+                    raise Exception("Khong co phu de nao lay duoc theo chi dinh!")
+                    st.stop()
+
+                #neu chua stop:
+                st.write('Da co sublay json3',video_lang_source)
+                #------------------------------
+                url_json3=None
+                for ptdic in sublay:
+                    if ptdic['ext'] == 'json3':
+                        url_json3 = ptdic['url']
+                        #st.write(url_json3)
+                        break
+                if url_json3==None:
+                    st.write("No url_json3!")
+                else:
+                    data=None
+                    try:
+                        response = requests.get(url_json3)
+                        #st.write(response.json())
+                        data = response.json()
+                    except:
+                        st.write("No data json!")
+                        st.stop()
+                    
+                    # BUOC 2 : chuyen data json3 ra json don gian gan vao subtitles
+                    #--------------------------------------------------------------
+                    subtitles = json3_to_segments(data)
+                    #st.write(subtitles)
+                    # Cac thong tin day du :
+                    st.write('1. :blue[Url of yt video : ]', url_yt)
+                    st.write('2. :green[Id of yt video : ]', video_id)
+                    st.write('3. :blue[Title of yt video : ]', video_title)
+                    st.write('4. :green[Duration(m) of yt video : ]', video_duration_m)
+                    st.write('5. :blue[Source voice of yt video  : ]', video_lang_source)
 
 
-                        #Sua lai subtitles mot ti
-                        for item in subtitles:
-                            item['text'] = re.sub(">>", "", item['text'])
-                            item['text'] = re.sub(r"\[.*?\]", "", item['text'])
-                        
-                        
-                        # BUOC 3 : Gui subtitles len github de save vao thu muc Subs tren do
-                        #-------------------------------------------------------------------
-                        #Gui subtitles len github de save vao thu muc Subs tren do
-                        kq = tsend_to_gihub(subtitles,video_id)
-                        #st.write(subtitles, lang, id_video)
-                        st.write('6. :red[Ket qua gui Subs len Github: ]',video_id,kq)
-                
+                    #Sua lai subtitles mot ti
+                    for item in subtitles:
+                        item['text'] = re.sub(">>", "", item['text'])
+                        item['text'] = re.sub(r"\[.*?\]", "", item['text'])
+                    
+                    
+                    # BUOC 3 : Gui subtitles len github de save vao thu muc Subs tren do
+                    #-------------------------------------------------------------------
+                    #Gui subtitles len github de save vao thu muc Subs tren do
+                    kq = tsend_to_gihub(subtitles,video_id)
+                    #st.write(subtitles, lang, id_video)
+                    st.write('6. :red[Ket qua gui Subs len Github: ]',video_id,kq)
+            
 
-                        # BUOC 4 : Lap HTML_CODE DE HIEN THI WEB
-                        #----------------------------------------------------------
-                        html_code = lap_html_code(video_id, video_title, subtitles)
+                    # BUOC 4 : Lap HTML_CODE DE HIEN THI WEB
+                    #----------------------------------------------------------
+                    html_code = lap_html_code(video_id, video_title, subtitles)
 
-                        # Hiển thị html_code trong Streamlit
-                        tieuDeTrangChinh.empty()
-                        aboutApp.empty()
-                        with aboutApp.container():
-                            st.components.v1.html(html_code, height=900, scrolling=True )
+                    # Hiển thị html_code trong Streamlit
+                    tieuDeTrangChinh.empty()
+                    aboutApp.empty()
+                    with aboutApp.container():
+                        st.components.v1.html(html_code, height=900, scrolling=True )
+
+
+
 
 # streamlit run https://raw.githubusercontent.com/tien89talkenvi/talk-envi/main/streamlit_app.py
 # https://raw.githubusercontent.com/hoangco89/hoangco89.github.io/main/Jschude/js_titleIdUrl_chude.json
 # DA THU:
 # https://www.youtube.com/watch?v=j7aYcNVCq7Y #en
+
+#Chu de 28
+# Sb1-Hq2-Tmb3-Dlm4-so28.json
+#Chu de 29
+# Sb1-Hq2-Tmb3-Dlm4-so28.json
+#Chu de 30
+# Sb1-Hq2-Tmb3-Dlm4-so28.json
+
