@@ -1,12 +1,10 @@
-# 
-# 
+# Update 170326
 import streamlit as st
 import yt_dlp
 from yt_dlp import YoutubeDL
 import requests
 import re
 import html
-#--------------
 import json
 import os
 import time
@@ -22,7 +20,7 @@ def tget_info(url):
         }
         info=None
         with YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            info = ydl.extract_info(url, download=False) 
 
         return info 
     except:
@@ -696,6 +694,9 @@ with st.sidebar:
     st.subheader('✅ :red[Nhập URL Youtube rồi nhấp OK]')
   
     URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+
+    list_langs = ['en','en-US','en-GB','vi','vi-VN']
+    lang = st.radio('Select video lang : ', list_langs, index=0, key='rd', horizontal=True, label_visibility="visible", width="content", bind=None)
     
     butUrl = st.button('🆗', on_click=save_and_clear)
 
@@ -751,7 +752,8 @@ with st.sidebar:
             # lay sub_lang_json3url (url cua phu de json ung voi lang chon) 
             # chu y rang thu tu cac lang da test nhieu lan, phai nhu nay thi moi de thanh cong
             # neu video_lang_source khac en thi nen dich qua tieng Anh
-            list_lang = ['en','en-US','en-GB','vi','vi-VN']
+            #list_lang = ['en','en-US','en-GB','vi','vi-VN']
+            list_lang = [lang]
             sub_lang_json3url = None
             if 'subtitles' in info and info['subtitles'] != {}:
                 sub = info['subtitles']
@@ -827,21 +829,3 @@ with st.sidebar:
             aboutApp.empty()
             with aboutApp.container():
                 st.components.v1.html(html_code, height=900, scrolling=True )
-
-# streamlit run https://raw.githubusercontent.com/tien89talkenvi/talk-envi/main/streamlit_app.py
-# https://raw.githubusercontent.com/hoangco89/hoangco89.github.io/main/Jschude/js_titleIdUrl_chude.json
-# DA THU:
-# https://www.youtube.com/watch?v=j7aYcNVCq7Y #en
-
-#Chu de 28
-# Sb1-Hq2-Tmb3-Dlm4-so28.json
-#Chu de 29
-# Sb1-Hq2-Tmb3-Dlm4-so28.json
-#Chu de 30
-# Sb1-Hq2-Tmb3-Dlm4-so28.json
-# https://www.youtube.com/watch?v=dvCOV5m8IDE #vi that bai
-# https://www.youtube.com/watch?v=bVRIpmjTSxM #BBC en-GB
-# https://www.youtube.com/watch?v=AQGJHAv7mv0   #vi
-# https://www.youtube.com/shorts/QrpxJLLW_X4 #vi
-# 
-# 
