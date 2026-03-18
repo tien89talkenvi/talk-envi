@@ -696,7 +696,7 @@ with st.sidebar:
     URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 
     list_langs = ['en','en-US','en-GB','vi','vi-VN']
-    lang = st.radio('Select video lang : ', list_langs, index=0, key='rd', horizontal=True, label_visibility="visible", width="content", bind=None)
+    langchon = st.radio('Select video lang ', list_langs, index=0, horizontal=True, )
     
     butUrl = st.button('🆗', on_click=save_and_clear)
 
@@ -753,7 +753,7 @@ with st.sidebar:
             # chu y rang thu tu cac lang da test nhieu lan, phai nhu nay thi moi de thanh cong
             # neu video_lang_source khac en thi nen dich qua tieng Anh
             #list_lang = ['en','en-US','en-GB','vi','vi-VN']
-            list_lang = [lang]
+            list_lang = [langchon]
             sub_lang_json3url = None
             if 'subtitles' in info and info['subtitles'] != {}:
                 sub = info['subtitles']
@@ -829,3 +829,4 @@ with st.sidebar:
             aboutApp.empty()
             with aboutApp.container():
                 st.components.v1.html(html_code, height=900, scrolling=True )
+
