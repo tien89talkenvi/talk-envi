@@ -754,8 +754,8 @@ with st.sidebar:
             # chu y rang thu tu cac lang da test nhieu lan, phai nhu nay thi moi de thanh cong
             # neu video_lang_source khac en thi nen dich qua tieng Anh
             #list_lang = ['en','en-US','en-GB','vi','vi-VN']
-            if video_language not in list_langs:
-                langchon = video_language if video_language != 'unknown' else 'en'
+            if video_language != langchon and video_language != 'unknown' and video_language != '':
+                langchon = video_language
             list_lang = [langchon]
             sub_lang_json3url = None
             if 'subtitles' in info and info['subtitles'] != {}:
