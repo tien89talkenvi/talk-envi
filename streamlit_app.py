@@ -748,11 +748,14 @@ with st.sidebar:
             video_id = info['id']
             video_title = info['title']
             video_duration_m = round(info['duration']/60,0)
+            video_language = info['language'] if 'language' in info else 'unknown'
 
             # lay sub_lang_json3url (url cua phu de json ung voi lang chon) 
             # chu y rang thu tu cac lang da test nhieu lan, phai nhu nay thi moi de thanh cong
             # neu video_lang_source khac en thi nen dich qua tieng Anh
             #list_lang = ['en','en-US','en-GB','vi','vi-VN']
+            if video_language not in list_langs:
+                langchon = video_language if video_language != 'unknown' else 'en'
             list_lang = [langchon]
             sub_lang_json3url = None
             if 'subtitles' in info and info['subtitles'] != {}:
@@ -829,4 +832,3 @@ with st.sidebar:
             aboutApp.empty()
             with aboutApp.container():
                 st.components.v1.html(html_code, height=900, scrolling=True )
-
