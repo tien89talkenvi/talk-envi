@@ -599,6 +599,16 @@ def lap_html_code(video_id, video_title, subtitles):
     utterance_volume = 0;
     }}
 
+const text = "Hello! How are you? I'm fine. Really great!";
+
+const parts = text
+.match(/[^?!\.]+[?!\.]*/g)
+.map(s => s.trim())
+.filter(s => s.length > 0);
+
+console.log(parts);
+// ["Hello!", "How are you?", "I'm fine.", "Really great!"]
+
 
     let dem = 0;
     function tom_tat_ndvideo(){{
@@ -767,7 +777,7 @@ with st.sidebar:
                     kq = lay_datajso0n3(sub_lang_json3url)
                     if kq==True:
                         video_lang_source = langchon
-                        break
+                        #break
                     else:
                         sub_lang_json3url=None
 
@@ -781,7 +791,7 @@ with st.sidebar:
                         kq = lay_datajso0n3(sub_lang_json3url)
                         if kq==True:
                             video_lang_source = langchon
-                            break
+                            #break
                         else:
                             sub_lang_json3url=None
 
