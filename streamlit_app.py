@@ -695,7 +695,7 @@ with st.sidebar:
   
     URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
 
-    list_langs = ['en','en-US','en-GB','vi','vi-VN']
+    list_langs = ['.','en','en-US','en-GB','vi','vi-VN']
     langchon = st.radio('Select video lang ', list_langs, index=0, horizontal=True, )
     
     butUrl = st.button('🆗', on_click=save_and_clear)
@@ -749,40 +749,41 @@ with st.sidebar:
             video_title = info['title']
             video_duration_m = round(info['duration']/60,0)
             video_language = info['language'] if 'language' in info else 'unknown'
+            st.write('0. :red[Language detected by yt-dlp : ]', video_language)
 
             # lay sub_lang_json3url (url cua phu de json ung voi lang chon) 
             # chu y rang thu tu cac lang da test nhieu lan, phai nhu nay thi moi de thanh cong
             # neu video_lang_source khac en thi nen dich qua tieng Anh
             #list_lang = ['en','en-US','en-GB','vi','vi-VN']
-            if video_language != langchon and video_language != 'unknown' and video_language != '':
+            if langchon == '.':
                 langchon = video_language
-            list_lang = [langchon]
+            #list_lang = [langchon]
             sub_lang_json3url = None
             if 'subtitles' in info and info['subtitles'] != {}:
                 sub = info['subtitles']
-                for lang in list_lang:
-                    if lang in sub and sub_lang_json3url==None:
-                        sub_lang_json3url = sub[lang][0]['url']
-                        kq = lay_datajso0n3(sub_lang_json3url)
-                        if kq==True:
-                            video_lang_source = lang
-                            break
-                        else:
-                            sub_lang_json3url=None
+                #for lang in list_lang:
+                if langchon in sub and sub_lang_json3url==None:
+                    sub_lang_json3url = sub[langchon][0]['url']
+                    kq = lay_datajso0n3(sub_lang_json3url)
+                    if kq==True:
+                        video_lang_source = langchon
+                        break
+                    else:
+                        sub_lang_json3url=None
 
             # neu van chua co thi tim lay trong automatic_captions
             if sub_lang_json3url == None:
                 if 'automatic_captions' in info and info['automatic_captions'] != {}:
                     sub = info['automatic_captions']
-                    for lang in list_lang:
-                        if lang in sub and sub_lang_json3url==None:
-                            sub_lang_json3url = sub[lang][0]['url']
-                            kq = lay_datajso0n3(sub_lang_json3url)
-                            if kq==True:
-                                video_lang_source = lang
-                                break
-                            else:
-                                sub_lang_json3url=None
+                    #for lang in list_lang:
+                    if langchon in sub and sub_lang_json3url==None:
+                        sub_lang_json3url = sub[langchon][0]['url']
+                        kq = lay_datajso0n3(sub_lang_json3url)
+                        if kq==True:
+                            video_lang_source = langchon
+                            break
+                        else:
+                            sub_lang_json3url=None
 
             # neu van chua co thi thong bao No va stop viec tim
             if sub_lang_json3url == None:
