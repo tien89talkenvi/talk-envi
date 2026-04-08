@@ -703,7 +703,12 @@ with st.sidebar:
     st.write("---")
     st.subheader('✅ :red[Nhập URL Youtube rồi nhấp OK]')
   
+    list_lamgi = ['subtitles','entries','chanelUrl','videos','shorts']
+    lamchon = st.radio('Select option ', list_lamgi, index=0, horizontal=True, )
+
+    ### Nhap Url tu streamlit ###
     URL = st.text_input("Nhập vào đây một URL YouTube hợp lệ:", key="url", label_visibility="hidden", placeholder="Nhập URL YouTube:")
+    ### --------------------- ###
 
     list_langs = ['.','en','en-US','en-GB','vi','vi-VN']
     langchon = st.radio('Select video lang ', list_langs, index=0, horizontal=True, )
@@ -737,7 +742,7 @@ with st.sidebar:
     elif URL_TU_TD_GUI != "" and URL1 == "":     
         url_yt = URL_TU_TD_GUI
     elif URL1 != ""  and URL_TU_TD_GUI != "" :     
-        url_yt = URL1
+        url_yt = URL1   # ca hai deu co thi uu tien URL1 nhap tu streamlit, vi URL_TU_TD_GUI la URL gui qua nen ko chac da duoc kiem tra hop le hay chua, con URL1 thi do nguoi dung nhap vao nen chac chan da kiem tra roi
     else:
         url_yt="" # ghi dai ma thoi de ko loi
 
@@ -753,7 +758,10 @@ with st.sidebar:
         if info==None:
             st.write(':red[No info, stop here.]')
             st.stop()
-        else:
+        # co info roi thi moi lam tiep, neu ko co info thi da stop roi nen ko can else
+
+        # TH 1 voi info da co -----
+        if ((URL1 != "" and URL_TU_TD_GUI == "") or (URL1 == "" and URL_TU_TD_GUI != "")) and lamchon == 'subtitles':
             # luu cac tt can thiet
             video_id = info['id']
             video_title = info['title']
@@ -843,3 +851,24 @@ with st.sidebar:
             aboutApp.empty()
             with aboutApp.container():
                 st.components.v1.html(html_code, height=900, scrolling=True )
+
+        # TH 2 voi info da co -----
+        elif URL1 != "" and URL_TU_TD_GUI == "" and lamchon == 'chanelUrl':
+            st.write(":red[channel_url : ]", info['channel_url'])
+
+        # TH 3 voi info da co  -----
+        #elif (URL1 != "" and URL_TU_TD_GUI == "" and lamchon == 'entries' and 'entries' in info) or (URL1 == "" and URL_TU_TD_GUI != "" and lamchon == 'entries'  and 'entries' in info):
+        #    st.write(info.get("title"))
+        #    id_playlist = info.get("id")
+        #    st.write(id_playlist)
+        #    for video in info['entries']:
+        #        vid_item = {}
+        #        vid_item['title'] = video['title']
+        #        vid_item['id'] = video['id']
+        #        js_videoIdTitle_cde.append(vid_item)
+
+
+
+        # TH 4 voi info da co  -----
+        #elif bike == "Yamaha":
+        #    print("bike is Yamaha")
