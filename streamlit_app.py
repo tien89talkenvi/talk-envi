@@ -617,7 +617,7 @@ console.log(parts);
                 if (subtitles.length>0){{
                     let alltext = '';
                     subtitles.forEach(item => {{
-                        alltext = alltext + item.textdich + " " ;
+                        alltext = alltext + item.text + " " ;
                     }});
                     chatbox.innerHTML = alltext.replaceAll(".", ".<br><br>");
                 }}else{{  
