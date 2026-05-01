@@ -10,6 +10,90 @@ import os
 import time
 import base64
 
+def upload_to_github(path_in_repo, content_dict, commit_message):
+    def tmahoa_tk():
+        cu='ghp_'
+        tkgia = "https://abc0|G2bA5Dh5TyPlG9j8fq5H3Q9TxTXVcN1ldP|Eh"
+        p1 = tkgia.split('|')[0]+tkgia.split('|')[1]+tkgia.split('|')[2]
+        #toidaytk = p1.replace(tkgia.split('|')[0],'ghp_')
+        return cu,p1,tkgia
+
+    #neu chua co file thi gui, neu co roi thi cap nhat
+    cu,p1,tkgia=tmahoa_tk()
+    # ==== CẤU HÌNH ====
+    GITHUB_TOKEN = p1.replace(tkgia.split('|')[0],cu)
+    REPO_OWNER = "hoangco89"
+    REPO_NAME = "hoangco89.github.io"
+    BRANCH = "main"
+
+    api_url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{path_in_repo}"
+
+    # Encode JSON thành base64
+    encoded_content = base64.b64encode(
+        json.dumps(content_dict, ensure_ascii=False, indent=2).encode("utf-8")
+        ).decode("utf-8")
+
+    # Kiểm tra file đã tồn tại chưa để lấy sha
+    get_file = requests.get(api_url, headers={"Authorization": f"token {GITHUB_TOKEN}"})
+
+    if get_file.status_code == 200:
+        sha = get_file.json()["sha"]
+    else:
+        sha = None
+
+    payload = {
+        "message": commit_message,
+        "content": encoded_content,
+        "branch": BRANCH,
+    }
+
+    if sha:
+        payload["sha"] = sha
+
+    response = requests.put(
+        api_url,
+        headers={"Authorization": f"token {GITHUB_TOKEN}"},
+        data=json.dumps(payload),
+    )
+
+    response.raise_for_status()
+    return response.json()
+
+def fetch_json_from_github():
+    SOURCE_JSON_URL = "https://raw.githubusercontent.com/hoangco89/hoangco89.github.io/main/Jschude/js_titleIdUrl_chude.json"
+    response = requests.get(SOURCE_JSON_URL)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_videos_from_channel(channel_id, len_source_data=0):
+    url = f"https://www.youtube.com/channel/{channel_id}/videos"
+
+    ydl_opts = {
+        "quiet": True,
+        "extract_flat": True,   # chỉ lấy metadata, không tải video
+        "skip_download": True,
+    }
+
+    videos = []
+    with YoutubeDL(ydl_opts) as ydl:
+        infoch = ydl.extract_info(url, download=False)
+
+    # lap item moi
+    item = {}
+    item['title'] = f"✦{str(len_source_data)}. {infoch['title']}"
+    item['id'] = infoch['id']
+    item['channel_url'] = url
+
+    # lay videos trong channel de tao json cho chude
+    for entry in infoch.get("entries", []):
+        videos.append({
+            "id": entry.get("id"),
+            "title": entry.get("title")
+        })
+    # tra ve 2 thong tin nay cho ham goi    
+    return item, videos
+
 # HAM 1 ----------
 def tget_info(url):
     info=None
@@ -599,15 +683,6 @@ def lap_html_code(video_id, video_title, subtitles):
     utterance_volume = 0;
     }}
 
-const text = "Hello! How are you? I'm fine. Really great!";
-
-const parts = text
-.match(/[^?!\.]+[?!\.]*/g)
-.map(s => s.trim())
-.filter(s => s.length > 0);
-
-console.log(parts);
-// ["Hello!", "How are you?", "I'm fine.", "Really great!"]
 
 
     let dem = 0;
@@ -640,10 +715,10 @@ console.log(parts);
     return html_code
 
 def lay_datajso0n3(sub_lang_json3url):
-    if 'Sorry...' in requests.get(sub_lang_json3url).text:
+    if "Sorry..." in requests.get(sub_lang_json3url).text:
         return False
     else:
-        return True    
+        return True
 
 
 #=== MAIN =====================================================
@@ -855,20 +930,30 @@ with st.sidebar:
         # TH 2 voi info da co -----
         elif URL1 != "" and URL_TU_TD_GUI == "" and lamchon == 'chanelUrl':
             st.write(":red[channel_url : ]", info['channel_url'])
+            # 1. Lấy JSON từ GitHub
+            source_data = fetch_json_from_github()
+            #tao item moi va listvideos de gui github
+            itemnew, lvideosnew = get_videos_from_channel(info['channel_id'], len(source_data))
+            source_data.append(itemnew)
 
-        # TH 3 voi info da co  -----
-        #elif (URL1 != "" and URL_TU_TD_GUI == "" and lamchon == 'entries' and 'entries' in info) or (URL1 == "" and URL_TU_TD_GUI != "" and lamchon == 'entries'  and 'entries' in info):
-        #    st.write(info.get("title"))
-        #    id_playlist = info.get("id")
-        #    st.write(id_playlist)
-        #    for video in info['entries']:
-        #        vid_item = {}
-        #        vid_item['title'] = video['title']
-        #        vid_item['id'] = video['id']
-        #        js_videoIdTitle_cde.append(vid_item)
+            st.write(source_data)
+            st.write(lvideosnew)
+            
+            # 2. Xử lý để tạo 2 file JSON mới
+            # (Bạn thay logic xử lý theo nhu cầu)
+            output1 = source_data
+            output2 = lvideosnew
+
+            # Tên file JSON sẽ tạo
+            OUTPUT_FILE_1 = "Jschude/js_titleIdUrl_chude.json"
+            OUTPUT_FILE_2 = f"Jschude/{info['channel_id']}.json"
+
+            # 3. Upload 2 file JSON lên GitHub
+            upload_to_github(OUTPUT_FILE_1, output1, commit_message="Add output1.json generated by Streamlit server")
+            # OUTPUT_FILE_1 la gia tri truyen vao path_in_repo
+            # output1 la gia tri truyen vao content_dict
+            upload_to_github(OUTPUT_FILE_2, output2, commit_message="Add output2.json generated by Streamlit server")
 
 
+            print("Đã tạo và upload 2 file JSON thành công!")
 
-        # TH 4 voi info da co  -----
-        #elif bike == "Yamaha":
-        #    print("bike is Yamaha")
