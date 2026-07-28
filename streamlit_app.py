@@ -435,6 +435,10 @@ def lap_html_code(video_id, video_title, subtitles):
     .copied-msg.show {{
       opacity: 1;
     }}
+    #nutcopyallsub{{
+        color:transparent;
+        text-align: center;
+    }}
 
     </style>
     </head>
@@ -466,7 +470,7 @@ def lap_html_code(video_id, video_title, subtitles):
             <br><br><button class="buttonD" onclick="tom_tat_ndvideo()" style="width:60%;">Full translated text</button><br>
 
             <div class="copy-container">
-                <button onclick="copyText()">Copy</button>
+                <div id="nutcopyallsub" onclick="copyText()">Copy</div>
                 <div id="copied" class="copied-msg">Copied</div>
             </div>
 
