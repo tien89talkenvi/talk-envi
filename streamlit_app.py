@@ -418,6 +418,20 @@ def lap_html_code(video_id, video_title, subtitles):
     color:transparent;
     text-align:center;
     }}
+
+    #copiedLabel {{
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #eee;
+    color: #333;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    }}
     </style>
     </head>
     <body>
@@ -449,7 +463,7 @@ def lap_html_code(video_id, video_title, subtitles):
 
             <div style="position: relative; display: inline-block;">
                 <div id="copiedLabel" style="display: none;">Copied</div>
-                <button id="nutcopyallsub" class="copytext-btn" onclick="copyallcap()">Copy</button>
+                <div id="nutcopyallsub" class="copytext-btn" onclick="copyallcap()">Copy</div>
             </div>
 
 
