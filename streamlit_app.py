@@ -415,7 +415,7 @@ def lap_html_code(video_id, video_title, subtitles):
     }}
 
     #nutcopyallsub{{
-    color:transparent;
+    color:red;
     text-align:center;
     }}
     </style>
