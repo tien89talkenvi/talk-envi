@@ -415,7 +415,7 @@ def lap_html_code(video_id, video_title, subtitles):
     }}
 
     #nutcopyallsub{{
-    color:red;
+    color:transparent;
     text-align:center;
     }}
     </style>
@@ -446,11 +446,16 @@ def lap_html_code(video_id, video_title, subtitles):
 
 
             <br><br><button class="buttonD" onclick="tom_tat_ndvideo()" style="width:60%;">Full translated text</button><br>
-            <div id="nutcopyallsub" onclick="copyallcap()">Copy</div>
+
+            <div style="position: relative; display: inline-block;">
+                <div id="copiedLabel" style="display: none;">Copied</div>
+                <button id="nutcopyallsub" class="copytext-btn" onclick="copyallcap()">Copy</button>
+            </div>
+
+
             <div id="chatbox" aria-hidden="false"></div>
 
         </div>
-    
 
     <!-- YouTube API -->
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -700,11 +705,20 @@ def lap_html_code(video_id, video_title, subtitles):
                         alltext = alltext + item.text + " " ;
                     }});
                     chatbox.innerHTML = alltext.replaceAll(".", ".<br><br>");
+                    if (chatbox.textContent !== ""){{
+                        document.getElementById("nutcopyallsub").style.color = "silver";
+        
+                    }}
+
                 }}else{{  
                     chatbox.innerHTML = 'No subtitles!';
+                    document.getElementById("nutcopyallsub").style.color = "transparent";
+
                 }}
             }}else{{
                 chatbox.innerHTML = '';
+                document.getElementById("nutcopyallsub").style.color = "transparent";
+
             }}
         }};
 
