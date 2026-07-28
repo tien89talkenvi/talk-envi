@@ -414,24 +414,28 @@ def lap_html_code(video_id, video_title, subtitles):
     font-size: 1.3rem;    
     }}
 
-    #nutcopyallsub{{
-    color:transparent;
-    text-align:center;
+
+
+    .copy-container {{
+      position: relative;
+      display: inline-block;
+    }}
+    .copied-msg {{
+      position: absolute;
+      top: -25px;
+      right: 4;
+      background: #4caf50;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }}
+    .copied-msg.show {{
+      opacity: 1;
     }}
 
-    #copiedLabel {{
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #eee;
-    color: #333;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-    }}
     </style>
     </head>
     <body>
@@ -461,10 +465,11 @@ def lap_html_code(video_id, video_title, subtitles):
 
             <br><br><button class="buttonD" onclick="tom_tat_ndvideo()" style="width:60%;">Full translated text</button><br>
 
-            <div style="position: relative; display: inline-block;">
-                <div id="copiedLabel" style="display: none;">Copied</div>
-                <div id="nutcopyallsub" class="copytext-btn" onclick="copyallcap()">Copy</div>
+            <div class="copy-container">
+                <button onclick="copyText()">Copy</button>
+                <div id="copied" class="copied-msg">Copied</div>
             </div>
+
 
 
             <div id="chatbox" aria-hidden="false"></div>
@@ -736,7 +741,9 @@ def lap_html_code(video_id, video_title, subtitles):
             }}
         }};
 
-    function copyallcap(){{
+
+    function copyText(){{
+        
     // Lấy phần tử theo id
     //const chatbox = document.getElementById("chatbox");
     
@@ -745,12 +752,16 @@ def lap_html_code(video_id, video_title, subtitles):
     
     // Dùng Clipboard API để copy
     navigator.clipboard.writeText(text).then(() => {{
+      const msg = document.getElementById("copied");
+      msg.classList.add("show");
+      setTimeout(() => {{
+        msg.classList.remove("show");
+      }}, 2000);
+
         console.log("Đã copy nội dung vào clipboard!");
     }}).catch(err => {{
         console.error("Không thể copy: ", err);
     }});
-
-
     }}
 
 
