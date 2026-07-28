@@ -414,6 +414,10 @@ def lap_html_code(video_id, video_title, subtitles):
     font-size: 1.3rem;    
     }}
 
+    #nutcopyallsub{{
+    color:transparent;
+    text-align:center;
+    }}
     </style>
     </head>
     <body>
@@ -442,6 +446,7 @@ def lap_html_code(video_id, video_title, subtitles):
 
 
             <br><br><button class="buttonD" onclick="tom_tat_ndvideo()" style="width:60%;">Full translated text</button><br>
+            <div id="nutcopyallsub" onclick="copyallcap()">Copy</div>
             <div id="chatbox" aria-hidden="false"></div>
 
         </div>
@@ -703,6 +708,24 @@ def lap_html_code(video_id, video_title, subtitles):
             }}
         }};
 
+    function copyallcap(){{
+    // Lấy phần tử theo id
+    //const chatbox = document.getElementById("chatbox");
+    
+    // Lấy nội dung text
+    const text = chatbox.innerText || chatbox.textContent;
+    
+    // Dùng Clipboard API để copy
+    navigator.clipboard.writeText(text).then(() => {{
+        console.log("Đã copy nội dung vào clipboard!");
+    }}).catch(err => {{
+        console.error("Không thể copy: ", err);
+    }});
+
+
+    }}
+
+
     //moi khi chay lai trang thi khoi phuc  voice + video
     restoreSelections();   // 🔥 khôi phục voice + video
 
@@ -730,6 +753,7 @@ st.markdown("""
     .block-container {
     padding-top: 2.2rem;
     }
+    
     </style>
     """, 
     unsafe_allow_html=True)
@@ -956,4 +980,3 @@ with st.sidebar:
 
 
             print("Đã tạo và upload 2 file JSON thành công!")
-
