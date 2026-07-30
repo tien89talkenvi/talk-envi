@@ -470,15 +470,11 @@ def lap_html_code(video_id, video_title, subtitles):
             <br><br><button class="buttonD" onclick="tom_tat_ndvideo()" style="width:60%;">Full translated text</button><br>
 
             <div class="copy-container">
-                <div id="nutcopyallsub" onclick="copyText()">Copy</div>
+                <div id="nutcopyallsub" onclick="copyText()">Copy</div><br>
                 <div id="copied" class="copied-msg">Copied</div>
             </div><br>
 
-
-
-            <div id="chatbox" aria-hidden="false">
-            <span style="color: transparent;">Tóm tắt nội dung của văn bản sau đây: </span><br>
-            </div>
+            <div id="chatbox" aria-hidden="false"></div>
 
         </div>
 
@@ -755,7 +751,7 @@ def lap_html_code(video_id, video_title, subtitles):
     
     // Lấy nội dung text
     const text = chatbox.innerText || chatbox.textContent;
-    
+    text = "Tóm tắt nội dung của văn bản sau đây: " + "<br>" + text; 
     // Dùng Clipboard API để copy
     navigator.clipboard.writeText(text).then(() => {{
       const msg = document.getElementById("copied");
