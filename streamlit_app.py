@@ -472,11 +472,13 @@ def lap_html_code(video_id, video_title, subtitles):
             <div class="copy-container">
                 <div id="nutcopyallsub" onclick="copyText()">Copy</div>
                 <div id="copied" class="copied-msg">Copied</div>
+            </div><br>
+
+
+
+            <div id="chatbox" aria-hidden="false">
+            <span style="color: transparent;">Tóm tắt nội dung của văn bản sau đây: </span><br>
             </div>
-
-
-
-            <div id="chatbox" aria-hidden="false"></div>
 
         </div>
 
