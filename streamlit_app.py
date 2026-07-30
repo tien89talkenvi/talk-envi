@@ -748,10 +748,11 @@ def lap_html_code(video_id, video_title, subtitles):
         
     // Lấy phần tử theo id
     //const chatbox = document.getElementById("chatbox");
-    
+    chatbox.innerHTML = "Tóm tắt nội dung của văn bản sau đây:<br>" + chatbox.innerHTML;
+
     // Lấy nội dung text
     let text = chatbox.innerText || chatbox.textContent;
-    text = "Tóm tắt nội dung của văn bản sau đây:" + text ;
+
     // Dùng Clipboard API để copy
     navigator.clipboard.writeText(text).then(() => {{
       const msg = document.getElementById("copied");
